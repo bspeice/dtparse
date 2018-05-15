@@ -2,15 +2,15 @@ extern crate chrono;
 extern crate dtparse;
 
 use chrono::DateTime;
-use chrono::Utc;
 use chrono::NaiveDate;
-use chrono::NaiveTime;
 use chrono::NaiveDateTime;
+use chrono::NaiveTime;
+use chrono::Utc;
 
 use dtparse::parse;
 
 macro_rules! ymd_test {
-    ($date: expr, $year: expr, $month: expr, $day: expr) => {
+    ($date:expr, $year:expr, $month:expr, $day:expr) => {
         let nd = NaiveDate::from_ymd($year, $month, $day);
         let nt = NaiveTime::from_hms(0, 0, 0);
         let dt = NaiveDateTime::new(nd, nt);
