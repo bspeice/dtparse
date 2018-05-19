@@ -628,6 +628,9 @@ impl YMD {
             }
         }
 
+        // TODO: Remove the error handling here
+        // We should be able to justify the UNWRAP, but I haven't
+        // convinced myself of that quite yet.
         if !year.and(month).and(day).is_some() {
             Err(ParseInternalError::YMDValueUnset)
         } else {
