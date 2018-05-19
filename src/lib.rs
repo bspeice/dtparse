@@ -7,8 +7,27 @@ use std::vec::Vec;
 
 #[cfg(test)]
 mod test_python_compat;
+#[cfg(test)]
+mod tests;
 
-#[derive(PartialEq, Debug)]
+#[derive(Debug, PartialEq)]
+pub enum ParseError {
+    InvalidMonth,
+}
+
+enum ParseInternalError {
+    // Errors that indicate internal bugs
+    YMDEarlyResolve,
+    YMDValueUnset,
+
+    // Python-style errors
+    ValueError(String),
+}
+
+type ParseResult<I> = Result<I, ParseError>;
+type ParseIResult<I> = Result<I, ParseInternalError>;
+
+#[derive(Debug, PartialEq)]
 pub enum Token {
     Alpha(String),
     Numeric(String),
@@ -253,18 +272,18 @@ struct ParserInfo {
     century: u32,
 }
 
-
 impl Default for ParserInfo {
     fn default() -> Self {
         let year = Local::now().year();
         let century = year / 100 * 100;
 
         ParserInfo {
-            jump: parse_info(vec![vec![
-                " ", ".", ",", ";", "-", "/", "'",
-                "at", "on", "and", "ad", "m", "t", "of",
-                "st", "nd", "rd", "th"
-            ]]),
+            jump: parse_info(vec![
+                vec![
+                    " ", ".", ",", ";", "-", "/", "'", "at", "on", "and", "ad", "m", "t", "of",
+                    "st", "nd", "rd", "th",
+                ],
+            ]),
             weekday: parse_info(vec![
                 vec!["Mon", "Monday"],
                 vec!["Tue", "Tues", "Tuesday"],
@@ -293,13 +312,8 @@ impl Default for ParserInfo {
                 vec!["m", "minute", "minutes"],
                 vec!["s", "second", "seconds"],
             ]),
-            ampm: parse_info(vec![
-                vec!["am", "a"],
-                vec!["pm", "p"],
-            ]),
-            utczone: parse_info(vec![vec![
-                "UTC", "GMT", "Z"
-            ]]),
+            ampm: parse_info(vec![vec!["am", "a"], vec!["pm", "p"]]),
+            utczone: parse_info(vec![vec!["UTC", "GMT", "Z"]]),
             pertain: parse_info(vec![vec!["of"]]),
             tzoffset: parse_info(vec![vec![]]),
             dayfirst: false,
@@ -360,5 +374,264 @@ impl ParserInfo {
         }
 
         year
+    }
+}
+
+fn days_in_month(year: i32, month: i32) -> Result<i32, ParseError> {
+    let leap_year = match year % 4 {
+        0 => year % 400 == 0,
+        _ => false,
+    };
+
+    match month {
+        2 => if leap_year {
+            Ok(29)
+        } else {
+            Ok(28)
+        },
+        1 | 3 | 5 | 7 | 8 | 10 | 12 => Ok(31),
+        4 | 6 | 9 | 11 => Ok(30),
+        _ => Err(ParseError::InvalidMonth),
+    }
+}
+
+#[derive(Debug, Hash, PartialEq, Eq)]
+enum YMDLabel {
+    Year,
+    Month,
+    Day,
+}
+
+struct YMD {
+    _ymd: Vec<i32>, // TODO: This seems like a super weird way to store things
+    century_specified: bool,
+    dstridx: Option<usize>,
+    mstridx: Option<usize>,
+    ystridx: Option<usize>,
+}
+
+impl YMD {
+    fn could_be_day(&self, val: i32) -> ParseResult<bool> {
+        if self.dstridx.is_some() {
+            Ok(false)
+        } else if self.mstridx.is_none() {
+            Ok((1 <= val) && (val <= 31))
+        } else if self.ystridx.is_none() {
+            // UNWRAP: mstridx guaranteed to have a value
+            // TODO: Justify unwrap for self._ymd
+            let month = self._ymd[self.mstridx.unwrap()];
+            Ok(1 <= val && (val <= days_in_month(2000, month)?))
+        } else {
+            let month = self._ymd[self.mstridx.unwrap()];
+            let year = self._ymd[self.ystridx.unwrap()];
+            Ok(1 <= val && (val <= days_in_month(year, month)?))
+        }
+    }
+
+    fn append(&mut self, val: i32, label: Option<YMDLabel>) -> ParseIResult<()> {
+        let mut label = label;
+
+        if val > 100 {
+            self.century_specified = true;
+            match label {
+                None => label = Some(YMDLabel::Year),
+                Some(YMDLabel::Year) => (),
+                _ => {
+                    return Err(ParseInternalError::ValueError(format!(
+                        "Invalid label: {:?}",
+                        label
+                    )))
+                }
+            }
+        }
+
+        match label {
+            Some(YMDLabel::Month) => {
+                if self.mstridx.is_some() {
+                    Err(ParseInternalError::ValueError(
+                        "Month already set.".to_owned(),
+                    ))
+                } else {
+                    self.mstridx = Some(self._ymd.len() - 1);
+                    Ok(())
+                }
+            }
+            Some(YMDLabel::Day) => {
+                if self.dstridx.is_some() {
+                    Err(ParseInternalError::ValueError(
+                        "Day already set.".to_owned(),
+                    ))
+                } else {
+                    self.dstridx = Some(self._ymd.len() - 1);
+                    Ok(())
+                }
+            }
+            Some(YMDLabel::Year) => {
+                if self.ystridx.is_some() {
+                    Err(ParseInternalError::ValueError(
+                        "Year already set.".to_owned(),
+                    ))
+                } else {
+                    self.ystridx = Some(self._ymd.len() - 1);
+                    Ok(())
+                }
+            }
+            None => Err(ParseInternalError::ValueError("Missing label.".to_owned())),
+        }
+    }
+
+    fn resolve_from_stridxs(
+        &mut self,
+        strids: &mut HashMap<YMDLabel, usize>,
+    ) -> ParseIResult<(i32, i32, i32)> {
+        if strids.len() == 2 {
+            let missing_key = if !strids.contains_key(&YMDLabel::Year) {
+                YMDLabel::Year
+            } else if !strids.contains_key(&YMDLabel::Month) {
+                YMDLabel::Month
+            } else {
+                YMDLabel::Day
+            };
+
+            let strids_vals: Vec<usize> = strids.values().map(|u| u.clone()).collect();
+            let missing_val = if !strids_vals.contains(&0) {
+                0
+            } else if !strids_vals.contains(&1) {
+                1
+            } else {
+                2
+            };
+
+            strids.insert(missing_key, missing_val);
+        }
+
+        if self._ymd.len() != 3 || strids.len() != 3 {
+            return Err(ParseInternalError::YMDEarlyResolve);
+        }
+
+        // TODO: Why do I have to clone &usize? Isn't it Copy?
+        Ok((
+            self._ymd[strids.get(&YMDLabel::Year).unwrap().clone()],
+            self._ymd[strids.get(&YMDLabel::Month).unwrap().clone()],
+            self._ymd[strids.get(&YMDLabel::Day).unwrap().clone()],
+        ))
+    }
+
+    fn resolve_ymd(&mut self, yearfirst: bool, dayfirst: bool) -> ParseIResult<(i32, i32, i32)> {
+        let len_ymd = self._ymd.len();
+        let mut year: Option<i32> = None;
+        let mut month: Option<i32> = None;
+        let mut day: Option<i32> = None;
+        let mut other: Option<i32> = None;
+
+        let mut strids: HashMap<YMDLabel, usize> = HashMap::new();
+        self.ystridx
+            .map(|u| strids.insert(YMDLabel::Year, u.clone()));
+        self.mstridx
+            .map(|u| strids.insert(YMDLabel::Month, u.clone()));
+        self.dstridx
+            .map(|u| strids.insert(YMDLabel::Day, u.clone()));
+
+        // TODO: More Rustiomatic way of doing this?
+        if let Ok(ymd) = self.resolve_from_stridxs(&mut strids) { return Ok(ymd) };
+
+        // TODO: More Rustiomatic? Too many blocks for my liking
+        // Also having the array unpacking syntax is nice
+        if len_ymd > 3 {
+            return Err(ParseInternalError::ValueError(
+                "More than three YMD values".to_owned(),
+            ));
+        } else if len_ymd == 1 || (self.mstridx.is_some() && len_ymd == 2) {
+            if self.mstridx.is_some() {
+                month = Some(self._ymd[self.mstridx.unwrap()]);
+                other = Some(self._ymd[self.mstridx.unwrap() - 1]);
+            } else {
+                other = Some(self._ymd[0]);
+            }
+
+            if len_ymd > 1 || self.mstridx.is_some() {
+                if other.unwrap_or(0) > 31 {
+                    year = other;
+                } else {
+                    day = other;
+                }
+            }
+        } else if len_ymd == 2 {
+            if self._ymd[0] > 31 {
+                year = Some(self._ymd[0]);
+                month = Some(self._ymd[1]);
+            } else if self._ymd[1] > 31 {
+                month = Some(self._ymd[0]);
+                year = Some(self._ymd[1]);
+            } else if dayfirst && self._ymd[1] <= 12 {
+                day = Some(self._ymd[0]);
+                month = Some(self._ymd[1]);
+            } else {
+                month = Some(self._ymd[0]);
+                day = Some(self._ymd[1]);
+            }
+        } else if len_ymd == 3 {
+            // UNWRAP: 3 elements guarantees all indices are Some
+            if self.mstridx.unwrap() == 0 {
+                if self._ymd[1] > 31 {
+                    month = Some(self._ymd[0]);
+                    year = Some(self._ymd[1]);
+                    day = Some(self._ymd[2]);
+                } else {
+                    month = Some(self._ymd[0]);
+                    day = Some(self._ymd[1]);
+                    year = Some(self._ymd[2]);
+                }
+            } else if self.mstridx.unwrap() == 1 {
+                if self._ymd[0] > 31 || (yearfirst && self._ymd[2] <= 31) {
+                    year = Some(self._ymd[0]);
+                    month = Some(self._ymd[1]);
+                    day = Some(self._ymd[2]);
+                } else {
+                    day = Some(self._ymd[0]);
+                    month = Some(self._ymd[1]);
+                    year = Some(self._ymd[2]);
+                }
+            } else if self.mstridx.unwrap() == 2 {
+                // It was in the original docs, so: WTF!?
+                if self._ymd[1] > 31 {
+                    day = Some(self._ymd[0]);
+                    year = Some(self._ymd[1]);
+                    month = Some(self._ymd[2]);
+                } else {
+                    year = Some(self._ymd[0]);
+                    day = Some(self._ymd[1]);
+                    month = Some(self._ymd[2]);
+                }
+            } else {
+                if self._ymd[0] > 31 || self.ystridx.unwrap() == 0 ||
+                        (yearfirst && self._ymd[1] <= 12 && self._ymd[2] <= 31) {
+                    if dayfirst && self._ymd[2] <= 12 {
+                        year = Some(self._ymd[0]);
+                        day = Some(self._ymd[1]);
+                        month = Some(self._ymd[2]);
+                    } else {
+                        year = Some(self._ymd[0]);
+                        month = Some(self._ymd[1]);
+                        day = Some(self._ymd[2]);
+                    }
+                } else if self._ymd[0] > 12 ||
+                        (dayfirst && self._ymd[1] <= 12) {
+                    day = Some(self._ymd[0]);
+                    month = Some(self._ymd[1]);
+                    year = Some(self._ymd[2]);
+                } else {
+                    month = Some(self._ymd[0]);
+                    day = Some(self._ymd[1]);
+                    year = Some(self._ymd[2]);
+                }
+            }
+        }
+
+        if !year.and(month).and(day).is_some() {
+            Err(ParseInternalError::YMDValueUnset)
+        } else {
+            Ok((year.unwrap(), month.unwrap(), day.unwrap()))
+        }
     }
 }
