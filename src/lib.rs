@@ -10,8 +10,6 @@ use std::collections::HashMap;
 use std::vec::Vec;
 
 #[cfg(test)]
-mod test_python_compat;
-#[cfg(test)]
 mod tests;
 
 #[derive(Debug, PartialEq)]
@@ -674,9 +672,7 @@ impl Default for Parser {
 
 impl Parser {
     pub fn new(info: ParserInfo) -> Self {
-        Parser {
-            info: info
-        }
+        Parser { info: info }
     }
 
     pub fn parse(
@@ -692,34 +688,43 @@ impl Parser {
         let default_ts = NaiveDateTime::new(default_date, NaiveTime::from_hms(0, 0, 0));
 
         // TODO: What should be done with the tokens?
-        let (res, tokens) = self.parse_with_tokens(
-            timestr, self.info.dayfirst, self.info.yearfirst, true, true)?;
+        let (res, tokens) =
+            self.parse_with_tokens(timestr, self.info.dayfirst, self.info.yearfirst, true, true)?;
 
         let naive = self.build_naive(&res, default_ts);
         Ok(self.build_tzaware(naive, &res, default_ts))
     }
 
-    fn parse_with_tokens(&self, timestr: String, dayfirst: bool, yearfirst: bool, fuzzy: bool,
-    fuzzy_with_tokens: bool) -> Result<(ParsingResult, Vec<String>), ParseError> {
-
+    fn parse_with_tokens(
+        &self,
+        timestr: String,
+        dayfirst: bool,
+        yearfirst: bool,
+        fuzzy: bool,
+        fuzzy_with_tokens: bool,
+    ) -> Result<(ParsingResult, Vec<String>), ParseError> {
         Err(ParseError::InvalidMonth)
     }
 
     fn build_naive(&self, res: &ParsingResult, default: NaiveDateTime) -> NaiveDateTime {
-
         Local::now().naive_local()
     }
 
-    fn build_tzaware(&self, dt: NaiveDateTime, res: &ParsingResult, default: NaiveDateTime) -> DateTime<Utc> {
-
+    fn build_tzaware(
+        &self,
+        dt: NaiveDateTime,
+        res: &ParsingResult,
+        default: NaiveDateTime,
+    ) -> DateTime<Utc> {
         Utc::now()
     }
 }
 
-fn parse(timestr: String, parserinfo: Option<ParserInfo>) -> Result<DateTime<Utc>, ParseError> {
-
-    let parserinfo = parserinfo.unwrap_or(ParserInfo::default());
-    let parser = Parser::new(parserinfo);
-
+fn parse_with_info(timestr: String, info: ParserInfo) -> Result<DateTime<Utc>, ParseError> {
+    let parser = Parser::new(info);
     parser.parse(timestr, None, false, vec![])
+}
+
+fn parse(timestr: String) -> Result<DateTime<Utc>, ParseError> {
+    parse_with_info(timestr, ParserInfo::default())
 }

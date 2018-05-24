@@ -1,5 +1,5 @@
-use super::Token;
-use super::tokenize;
+use Token;
+use tokenize;
 
 #[test]
 fn test_python_compat() {

@@ -1,5 +1,7 @@
 #import dateutil.parser._timelex.split as time_split
 from dateutil.parser import _timelex
+from dateutil.parser import parse as duparse
+import pytz
 
 # The TEST_STRINGS list should be the only thing that actually needs changing
 TEST_STRINGS = [
@@ -12,7 +14,7 @@ S4 = ' ' * 4
 S8 = ' ' * 8
 S12 = ' ' * 12
 
-def test_string_to_rust(time_string):
+def rust_tokenize(time_string):
     split_array = _timelex.split(time_string)
 
     def translate_token(token):
@@ -28,9 +30,9 @@ def test_string_to_rust(time_string):
 
     return [translate_token(t) for t in split_array]
 
-def main():
-    header = '''use super::Token;
-use super::tokenize;
+def build_split_string_tests():
+    header = '''use ::Token;
+use ::tokenize;
 
 #[test]
 fn test_python_compat() {\n'''
@@ -39,7 +41,7 @@ fn test_python_compat() {\n'''
 
     for test_string in TEST_STRINGS:
         token_string = '\n'.join(['{}{},'.format(S12, s)
-                                  for s in test_string_to_rust(test_string)])
+                                  for s in rust_tokenize(test_string)])
         tests.append('    assert_eq!(\n{}tokenize("{}"),\n{}vec![\n{}\n{}]\n{});'
                      .format(S8, test_string, S8, token_string, S8, S4))
 
@@ -47,10 +49,35 @@ fn test_python_compat() {\n'''
 
     footer = '\n}\n'
 
-    with open('src/test_python_compat.rs', 'w') as handle:
-        handle.write(header)
-        handle.write(body)
-        handle.write(footer)
+    return header + body + footer
+
+def test_parse(time_string):
+    dt = duparse(time_string)
+    # TODO: Don't make this dependent on New_York
+    iso8601 = pytz.timezone('America/New_York').localize(dt).astimezone(pytz.utc)
+    return 'assert_eq!(\n{}parse("{}".to_owned())\n{}.unwrap()\n{}.to_rfc3339_opts(SecondsFormat::Micros, false),\n{}"{}"\n{});'.format(
+        S8, time_string, S12, S12, S8, iso8601, S4)
+
+def build_parse_tests():
+    header = '''use chrono::SecondsFormat;
+
+use parse;
+
+#[test]
+fn test_python_compat() {\n'''
+
+    asserts = ['    {}'.format(test_parse(a)) for a in TEST_STRINGS]
+    body = '\n'.join(asserts)
+
+    footer = '\n}\n'
+
+    return header + body + footer
 
 if __name__ == '__main__':
-    main()
+    split_string_test = build_split_string_tests()
+    with open('src/tests/compat_split_string.rs', 'w+') as handle:
+        handle.write(split_string_test)
+
+    parse_test = build_parse_tests()
+    with open('src/tests/compat_parse.rs', 'w+') as handle:
+        handle.write(parse_test)
