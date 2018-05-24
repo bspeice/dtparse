@@ -10,6 +10,13 @@ TEST_STRINGS = [
     'Mar. 5, 2018',
 ]
 
+AUTOGEN_HEADER = '''
+// WARNING
+// This file was auto-generated using the `build_tests.py` script.
+// Please do not edit it manually.
+
+'''
+
 S4 = ' ' * 4
 S8 = ' ' * 8
 S12 = ' ' * 12
@@ -31,8 +38,8 @@ def rust_tokenize(time_string):
     return [translate_token(t) for t in split_array]
 
 def build_split_string_tests():
-    header = '''use ::Token;
-use ::tokenize;
+    header = '''use Token;
+use tokenize;
 
 #[test]
 fn test_python_compat() {\n'''
@@ -76,8 +83,8 @@ fn test_python_compat() {\n'''
 if __name__ == '__main__':
     split_string_test = build_split_string_tests()
     with open('src/tests/compat_split_string.rs', 'w+') as handle:
-        handle.write(split_string_test)
+        handle.write(AUTOGEN_HEADER + split_string_test)
 
     parse_test = build_parse_tests()
     with open('src/tests/compat_parse.rs', 'w+') as handle:
-        handle.write(parse_test)
+        handle.write(AUTOGEN_HEADER + parse_test)
