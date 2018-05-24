@@ -1,7 +1,11 @@
 extern crate chrono;
 
+use chrono::DateTime;
 use chrono::Datelike;
 use chrono::Local;
+use chrono::NaiveDateTime;
+use chrono::NaiveTime;
+use chrono::Utc;
 use std::collections::HashMap;
 use std::vec::Vec;
 
@@ -533,7 +537,9 @@ impl YMD {
             .map(|u| strids.insert(YMDLabel::Day, u.clone()));
 
         // TODO: More Rustiomatic way of doing this?
-        if let Ok(ymd) = self.resolve_from_stridxs(&mut strids) { return Ok(ymd) };
+        if let Ok(ymd) = self.resolve_from_stridxs(&mut strids) {
+            return Ok(ymd);
+        };
 
         // TODO: More Rustiomatic? Too many blocks for my liking
         // Also having the array unpacking syntax is nice
@@ -604,8 +610,9 @@ impl YMD {
                     month = Some(self._ymd[2]);
                 }
             } else {
-                if self._ymd[0] > 31 || self.ystridx.unwrap() == 0 ||
-                        (yearfirst && self._ymd[1] <= 12 && self._ymd[2] <= 31) {
+                if self._ymd[0] > 31 || self.ystridx.unwrap() == 0
+                    || (yearfirst && self._ymd[1] <= 12 && self._ymd[2] <= 31)
+                {
                     if dayfirst && self._ymd[2] <= 12 {
                         year = Some(self._ymd[0]);
                         day = Some(self._ymd[1]);
@@ -615,8 +622,7 @@ impl YMD {
                         month = Some(self._ymd[1]);
                         day = Some(self._ymd[2]);
                     }
-                } else if self._ymd[0] > 12 ||
-                        (dayfirst && self._ymd[1] <= 12) {
+                } else if self._ymd[0] > 12 || (dayfirst && self._ymd[1] <= 12) {
                     day = Some(self._ymd[0]);
                     month = Some(self._ymd[1]);
                     year = Some(self._ymd[2]);
@@ -637,4 +643,83 @@ impl YMD {
             Ok((year.unwrap(), month.unwrap(), day.unwrap()))
         }
     }
+}
+
+struct ParsingResult {
+    year: i32,
+    month: i32,
+    day: i32,
+    weekday: bool,
+    hour: i32,
+    minute: i32,
+    second: i32,
+    microsecond: i32,
+    tzname: i32,
+    tzoffset: i32,
+    ampm: bool,
+    any_unused_tokens: Vec<String>,
+}
+
+struct Parser {
+    info: ParserInfo,
+}
+
+impl Default for Parser {
+    fn default() -> Self {
+        Parser {
+            info: ParserInfo::default(),
+        }
+    }
+}
+
+impl Parser {
+    pub fn new(info: ParserInfo) -> Self {
+        Parser {
+            info: info
+        }
+    }
+
+    pub fn parse(
+        &self,
+        timestr: String,
+        default: Option<NaiveDateTime>,
+        ignoretz: bool,
+        tzinfos: Vec<String>,
+    ) -> Result<DateTime<Utc>, ParseError> {
+        let now = Local::now().naive_local();
+        let default_date = default.unwrap_or(now).date();
+
+        let default_ts = NaiveDateTime::new(default_date, NaiveTime::from_hms(0, 0, 0));
+
+        // TODO: What should be done with the tokens?
+        let (res, tokens) = self.parse_with_tokens(
+            timestr, self.info.dayfirst, self.info.yearfirst, true, true)?;
+
+        let naive = self.build_naive(&res, default_ts);
+        Ok(self.build_tzaware(naive, &res, default_ts))
+    }
+
+    fn parse_with_tokens(&self, timestr: String, dayfirst: bool, yearfirst: bool, fuzzy: bool,
+    fuzzy_with_tokens: bool) -> Result<(ParsingResult, Vec<String>), ParseError> {
+
+        Err(ParseError::InvalidMonth)
+    }
+
+    fn build_naive(&self, res: &ParsingResult, default: NaiveDateTime) -> NaiveDateTime {
+
+        Local::now().naive_local()
+    }
+
+    fn build_tzaware(&self, dt: NaiveDateTime, res: &ParsingResult, default: NaiveDateTime) -> DateTime<Utc> {
+
+        Utc::now()
+    }
+}
+
+fn parse(timestr: String, parserinfo: Option<ParserInfo>) -> Result<DateTime<Utc>, ParseError> {
+
+    let parserinfo = parserinfo.unwrap_or(ParserInfo::default());
+    let parser = Parser::new(parserinfo);
+
+    parser.parse(timestr, None, false, vec![])
 }
