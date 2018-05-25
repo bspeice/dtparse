@@ -1,7 +1,10 @@
+#![allow(dead_code)]
+
 extern crate chrono;
 
 use chrono::DateTime;
 use chrono::Datelike;
+use chrono::FixedOffset;
 use chrono::Local;
 use chrono::NaiveDateTime;
 use chrono::NaiveTime;
@@ -674,7 +677,7 @@ impl Parser {
         default: Option<NaiveDateTime>,
         ignoretz: bool,
         tzinfos: Vec<String>,
-    ) -> Result<DateTime<Utc>, ParseError> {
+    ) -> Result<DateTime<FixedOffset>, ParseError> {
         let now = Local::now().naive_local();
         let default_date = default.unwrap_or(now).date();
 
@@ -708,16 +711,17 @@ impl Parser {
         dt: NaiveDateTime,
         res: &ParsingResult,
         default: NaiveDateTime,
-    ) -> DateTime<Utc> {
-        Utc::now()
+    ) -> DateTime<FixedOffset> {
+
+        Local::now().with_timezone(&FixedOffset::east(0))
     }
 }
 
-fn parse_with_info(timestr: String, info: ParserInfo) -> Result<DateTime<Utc>, ParseError> {
+fn parse_with_info(timestr: String, info: ParserInfo) -> Result<DateTime<FixedOffset>, ParseError> {
     let parser = Parser::new(info);
     parser.parse(timestr, None, false, vec![])
 }
 
-fn parse(timestr: String) -> Result<DateTime<Utc>, ParseError> {
+fn parse(timestr: String) -> Result<DateTime<FixedOffset>, ParseError> {
     parse_with_info(timestr, ParserInfo::default())
 }
