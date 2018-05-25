@@ -26,7 +26,7 @@ def rust_tokenize(time_string):
     return ['"{}".to_owned()'.format(token) for token in split_array]
 
 def build_split_string_tests():
-    header = '''use ::tokenize;
+    header = '''use tokenize;
 
 #[test]
 fn test_python_compat() {\n'''
