@@ -27,4 +27,16 @@ fn test_python_compat() {
             .to_rfc3339_opts(SecondsFormat::Micros, false),
         "2018-03-05 05:00:00+00:00"
     );
+    assert_eq!(
+        parse("19990101T23".to_owned())
+            .unwrap()
+            .to_rfc3339_opts(SecondsFormat::Micros, false),
+        "1999-01-02 04:00:00+00:00"
+    );
+    assert_eq!(
+        parse("19990101T2359".to_owned())
+            .unwrap()
+            .to_rfc3339_opts(SecondsFormat::Micros, false),
+        "1999-01-02 04:59:00+00:00"
+    );
 }

@@ -5,3 +5,4 @@ authors = ["Bradlee Speice <bspeice@kcg.com>"]
 
 [dependencies]
 chrono = "0.4"
+rust_decimal = "0.8"

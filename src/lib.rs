@@ -2,6 +2,7 @@
 #![allow(unused)]
 
 extern crate chrono;
+extern crate rust_decimal;
 
 use chrono::DateTime;
 use chrono::Datelike;
@@ -10,24 +11,46 @@ use chrono::Local;
 use chrono::NaiveDateTime;
 use chrono::NaiveTime;
 use chrono::Utc;
+use rust_decimal::Decimal;
+use rust_decimal::Error as DecimalError;
 use std::collections::HashMap;
+use std::num::ParseIntError;
+use std::str::FromStr;
 use std::vec::Vec;
 
 #[cfg(test)]
 mod tests;
 
-#[derive(Debug, PartialEq)]
-pub enum ParseError {
-    InvalidMonth,
-}
 
-enum ParseInternalError {
+#[derive(Debug, PartialEq)]
+pub enum ParseInternalError {
     // Errors that indicate internal bugs
     YMDEarlyResolve,
     YMDValueUnset,
+    ParseIndexError,
+    InvalidDecimal,
+    InvalidInteger,
 
     // Python-style errors
     ValueError(String),
+}
+
+impl From<DecimalError> for ParseInternalError {
+    fn from(err: DecimalError) -> Self { ParseInternalError::InvalidDecimal }
+}
+
+impl From<ParseIntError> for ParseInternalError {
+    fn from(err: ParseIntError) -> Self { ParseInternalError::InvalidInteger }
+}
+
+#[derive(Debug, PartialEq)]
+pub enum ParseError {
+    InternalError(ParseInternalError),
+    InvalidMonth,
+}
+
+impl From<ParseInternalError> for ParseError {
+    fn from(err: ParseInternalError) -> Self { ParseError::InternalError(err) }
 }
 
 type ParseResult<I> = Result<I, ParseError>;
@@ -267,8 +290,8 @@ struct ParserInfo {
     tzoffset: HashMap<String, usize>,
     dayfirst: bool,
     yearfirst: bool,
-    year: u32,
-    century: u32,
+    year: i32,
+    century: i32,
 }
 
 impl Default for ParserInfo {
@@ -317,8 +340,8 @@ impl Default for ParserInfo {
             tzoffset: parse_info(vec![vec![]]),
             dayfirst: false,
             yearfirst: false,
-            year: year as u32,
-            century: century as u32,
+            year: year,
+            century: century,
         }
     }
 }
@@ -360,7 +383,7 @@ impl ParserInfo {
         }
     }
 
-    fn convertyear(&self, year: u32, century_specified: bool) -> u32 {
+    fn convertyear(&self, year: i32, century_specified: bool) -> i32 {
         let mut year = year;
 
         if year < 100 && !century_specified {
@@ -374,6 +397,20 @@ impl ParserInfo {
 
         year
     }
+
+    // TODO: Should this be moved elsewhere?
+    fn validate(&self, res: &mut ParsingResult) -> bool {
+        if let Some(y) = res.year { res.year = Some(self.convertyear(y, res.century_specified)) };
+ 
+        if res.tzoffset == 0 && res.tzname.is_none() || res.tzname == Some("Z".to_owned()) {
+            res.tzname = Some("UTC".to_owned());
+            res.tzoffset = 0;
+        } else if res.tzoffset != 0 && res.tzname.is_some() && self.get_utczone(res.tzname.as_ref().unwrap()) {
+            res.tzoffset = 0;
+        }
+
+        true
+    }
 }
 
 fn days_in_month(year: i32, month: i32) -> Result<i32, ParseError> {
@@ -383,11 +420,7 @@ fn days_in_month(year: i32, month: i32) -> Result<i32, ParseError> {
     };
 
     match month {
-        2 => if leap_year {
-            Ok(29)
-        } else {
-            Ok(28)
-        },
+        2 => if leap_year { Ok(29) } else { Ok(28) },
         1 | 3 | 5 | 7 | 8 | 10 | 12 => Ok(31),
         4 | 6 | 9 | 11 => Ok(30),
         _ => Err(ParseError::InvalidMonth),
@@ -401,6 +434,7 @@ enum YMDLabel {
     Day,
 }
 
+#[derive(Debug, Default)]
 struct YMD {
     _ymd: Vec<i32>, // TODO: This seems like a super weird way to store things
     century_specified: bool,
@@ -410,6 +444,9 @@ struct YMD {
 }
 
 impl YMD {
+
+    fn len(&self) -> usize { self._ymd.len() }
+
     fn could_be_day(&self, val: i32) -> ParseResult<bool> {
         if self.dstridx.is_some() {
             Ok(false)
@@ -640,40 +677,32 @@ impl YMD {
     }
 }
 
+#[derive(Default)]
 struct ParsingResult {
-    year: i32,
-    month: i32,
-    day: i32,
-    weekday: bool,
-    hour: i32,
-    minute: i32,
-    second: i32,
-    microsecond: i32,
-    tzname: i32,
+    year: Option<i32>,
+    month: Option<i32>,
+    day: Option<i32>,
+    weekday: Option<bool>,
+    hour: Option<i32>,
+    minute: Option<i32>,
+    second: Option<i32>,
+    microsecond: Option<i32>,
+    tzname: Option<String>,
     tzoffset: i32,
-    ampm: bool,
+    ampm: Option<bool>,
+    century_specified: bool,
     any_unused_tokens: Vec<String>,
 }
 
+#[derive(Default)]
 struct Parser {
     info: ParserInfo,
 }
 
-impl Default for Parser {
-    fn default() -> Self {
-        Parser {
-            info: ParserInfo::default(),
-        }
-    }
-}
-
 impl Parser {
-    pub fn new(info: ParserInfo) -> Self {
-        Parser { info: info }
-    }
 
     pub fn parse(
-        &self,
+        &mut self,
         timestr: String,
         default: Option<NaiveDateTime>,
         ignoretz: bool,
@@ -686,20 +715,46 @@ impl Parser {
 
         // TODO: What should be done with the tokens?
         let (res, tokens) =
-            self.parse_with_tokens(timestr, self.info.dayfirst, self.info.yearfirst, true, true)?;
+            self.parse_with_tokens(timestr, None, None, false, false)?;
 
         let naive = self.build_naive(&res, default_ts);
         Ok(self.build_tzaware(naive, &res, default_ts))
     }
 
     fn parse_with_tokens(
-        &self,
+        &mut self,
         timestr: String,
-        dayfirst: bool,
-        yearfirst: bool,
+        dayfirst: Option<bool>,
+        yearfirst: Option<bool>,
         fuzzy: bool,
         fuzzy_with_tokens: bool,
     ) -> Result<(ParsingResult, Vec<String>), ParseError> {
+        let fuzzy = if fuzzy_with_tokens { true } else { fuzzy };
+        // This is probably a stylistic abomination
+        let dayfirst = if let Some(dayfirst) = dayfirst { dayfirst } else { self.info.dayfirst };
+        let yearfirst = if let Some(yearfirst) = yearfirst { yearfirst } else { self.info.yearfirst };
+
+        let mut res = ParsingResult::default();
+        
+        let l = tokenize(&timestr);
+        let skipped_idxs: Vec<usize> = Vec::new();
+
+        let ymd = YMD::default();
+
+        let len_l = l.len();
+        let mut i = 0;
+
+        while i < len_l {
+
+            let value_repr = l.get(i).ok_or(ParseInternalError::ParseIndexError)?;
+
+            let value = value_repr.parse::<f32>();
+
+            if let Ok(v) = value {
+                i = self.parse_numeric_token(&l, i, &self.info, &ymd, &mut res, fuzzy)?;
+            }
+        }
+
         Err(ParseError::InvalidMonth)
     }
 
@@ -716,10 +771,37 @@ impl Parser {
 
         Local::now().with_timezone(&FixedOffset::east(0))
     }
+
+    fn parse_numeric_token(&self, tokens: &Vec<String>, idx: usize, info: &ParserInfo, ymd: &YMD, res: &mut ParsingResult, fuzzy: bool) -> Result<usize, ParseInternalError> {
+        let value_repr = &tokens[idx];
+        let value = Decimal::from_str(&value_repr)?;
+
+        let len_li = value_repr.len();
+        let len_l = tokens.len();
+
+        let mut s: Option<&str> = None;
+
+        // TODO: I miss the `x in y` syntax
+        // TODO: Decompose this logic a bit
+        if ymd.len() == 3 && (len_li == 2 || len_li == 4) &&
+            res.hour.is_none() && (
+                idx + 1 >= len_l ||
+                (tokens[idx + 1] != ":" && info.get_hms(&tokens[idx + 1]).is_none())) {
+
+            // 1990101T32[59]
+            s = Some(&tokens[idx]);
+            res.hour = Some(s.unwrap()[0..2].parse::<i32>()?);
+
+            if len_li == 4 { res.minute = Some(s.unwrap()[2..4].parse::<i32>()?) }
+        }
+
+        Ok(idx)
+    }
 }
 
 fn parse_with_info(timestr: String, info: ParserInfo) -> Result<DateTime<FixedOffset>, ParseError> {
-    let parser = Parser::new(info);
+    // TODO: Is `::new()` more stylistic?
+    let mut parser = Parser { info: info };
     parser.parse(timestr, None, false, vec![])
 }
 
