@@ -29,15 +29,8 @@ enum ParseInternalError {
 type ParseResult<I> = Result<I, ParseError>;
 type ParseIResult<I> = Result<I, ParseInternalError>;
 
-#[derive(Debug, PartialEq)]
-pub enum Token {
-    Alpha(String),
-    Numeric(String),
-    Separator(String),
-}
-
 pub struct Tokenizer {
-    token_stack: Vec<Token>,
+    token_stack: Vec<String>,
     parse_string: String,
 }
 
@@ -60,7 +53,7 @@ impl Tokenizer {
 }
 
 impl Iterator for Tokenizer {
-    type Item = Token;
+    type Item = String;
 
     fn next(&mut self) -> Option<Self::Item> {
         if !self.token_stack.is_empty() {
@@ -151,24 +144,24 @@ impl Iterator for Tokenizer {
         });
         let needs_split = seen_letters || dot_count > 1 || char_stack.last().unwrap() == &'.'
             || char_stack.last().unwrap() == &',';
-        let final_string = char_stack.into_iter().collect();
+        let final_string: String = char_stack.into_iter().collect();
 
         let mut tokens = match state {
-            ParseState::Empty => vec![Token::Separator(final_string)],
-            ParseState::Alpha => vec![Token::Alpha(final_string)],
-            ParseState::Numeric => vec![Token::Numeric(final_string)],
+            ParseState::Empty => vec![final_string],
+            ParseState::Alpha => vec![final_string],
+            ParseState::Numeric => vec![final_string],
             ParseState::AlphaDecimal => {
                 if needs_split {
                     decimal_split(&final_string, false)
                 } else {
-                    vec![Token::Alpha(final_string)]
+                    vec![final_string]
                 }
             }
             ParseState::NumericDecimal => {
                 if needs_split {
                     decimal_split(&final_string, dot_count == 0)
                 } else {
-                    vec![Token::Numeric(final_string)]
+                    vec![final_string]
                 }
             }
         }.into_iter()
@@ -181,8 +174,8 @@ impl Iterator for Tokenizer {
     }
 }
 
-fn decimal_split(characters: &str, cast_period: bool) -> Vec<Token> {
-    let mut token_stack: Vec<Token> = Vec::new();
+fn decimal_split(characters: &str, cast_period: bool) -> Vec<String> {
+    let mut token_stack: Vec<String> = Vec::new();
     let mut char_stack: Vec<char> = Vec::new();
     let mut state = ParseState::Empty;
 
@@ -197,17 +190,17 @@ fn decimal_split(characters: &str, cast_period: bool) -> Vec<Token> {
                     state = ParseState::Numeric;
                 } else {
                     let character = if cast_period { '.' } else { c };
-                    token_stack.push(Token::Separator(character.to_string()));
+                    token_stack.push(character.to_string());
                 }
             }
             ParseState::Alpha => {
                 if c.is_alphabetic() {
                     char_stack.push(c);
                 } else {
-                    token_stack.push(Token::Alpha(char_stack.iter().collect()));
+                    token_stack.push(char_stack.iter().collect());
                     char_stack.clear();
                     let character = if cast_period { '.' } else { c };
-                    token_stack.push(Token::Separator(character.to_string()));
+                    token_stack.push(character.to_string());
                     state = ParseState::Empty;
                 }
             }
@@ -215,10 +208,10 @@ fn decimal_split(characters: &str, cast_period: bool) -> Vec<Token> {
                 if c.is_numeric() {
                     char_stack.push(c);
                 } else {
-                    token_stack.push(Token::Numeric(char_stack.iter().collect()));
+                    token_stack.push(char_stack.iter().collect());
                     char_stack.clear();
                     let character = if cast_period { '.' } else { c };
-                    token_stack.push(Token::Separator(character.to_string()));
+                    token_stack.push(character.to_string());
                     state = ParseState::Empty;
                 }
             }
@@ -227,8 +220,8 @@ fn decimal_split(characters: &str, cast_period: bool) -> Vec<Token> {
     }
 
     match state {
-        ParseState::Alpha => token_stack.push(Token::Alpha(char_stack.iter().collect())),
-        ParseState::Numeric => token_stack.push(Token::Numeric(char_stack.iter().collect())),
+        ParseState::Alpha => token_stack.push(char_stack.iter().collect()),
+        ParseState::Numeric => token_stack.push(char_stack.iter().collect()),
         ParseState::Empty => (),
         _ => panic!("Invalid parse state during decimal_split()"),
     }
@@ -236,7 +229,7 @@ fn decimal_split(characters: &str, cast_period: bool) -> Vec<Token> {
     token_stack
 }
 
-pub fn tokenize(parse_string: &str) -> Vec<Token> {
+pub fn tokenize(parse_string: &str) -> Vec<String> {
     let tokenizer = Tokenizer::new(parse_string.to_owned());
     tokenizer.collect()
 }

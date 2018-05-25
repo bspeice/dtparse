@@ -23,23 +23,10 @@ S12 = ' ' * 12
 
 def rust_tokenize(time_string):
     split_array = _timelex.split(time_string)
-
-    def translate_token(token):
-        if token[0].isalpha():
-            return 'Token::Alpha("{}".to_owned())'.format(token)
-        elif token[0].isnumeric():
-            return 'Token::Numeric("{}".to_owned())'.format(token)
-        elif len(token) == 1:
-            return 'Token::Separator("{}".to_owned())'.format(token)
-        else:
-            raise Exception("Invalid token during parsing of dateutil "
-                            "split: {}".format(token))
-
-    return [translate_token(t) for t in split_array]
+    return ['"{}".to_owned()'.format(token) for token in split_array]
 
 def build_split_string_tests():
-    header = '''use Token;
-use tokenize;
+    header = '''use ::tokenize;
 
 #[test]
 fn test_python_compat() {\n'''
