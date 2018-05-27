@@ -8,6 +8,9 @@ extern crate chrono;
 extern crate num_traits;
 extern crate rust_decimal;
 
+#[cfg(test)]
+extern crate pyo3;
+
 use chrono::DateTime;
 use chrono::Datelike;
 use chrono::FixedOffset;
