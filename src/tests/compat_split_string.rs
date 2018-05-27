@@ -1,4 +1,3 @@
-
 // WARNING
 // This file was auto-generated using the `build_tests.py` script.
 // Please do not edit it manually.
@@ -42,18 +41,10 @@ fn test_python_compat() {
     );
     assert_eq!(
         tokenize("19990101T23"),
-        vec![
-            "19990101".to_owned(),
-            "T".to_owned(),
-            "23".to_owned(),
-        ]
+        vec!["19990101".to_owned(), "T".to_owned(), "23".to_owned()]
     );
     assert_eq!(
         tokenize("19990101T2359"),
-        vec![
-            "19990101".to_owned(),
-            "T".to_owned(),
-            "2359".to_owned(),
-        ]
+        vec!["19990101".to_owned(), "T".to_owned(), "2359".to_owned()]
     );
 }

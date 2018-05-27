@@ -1,4 +1,3 @@
-
 // WARNING
 // This file was auto-generated using the `build_tests.py` script.
 // Please do not edit it manually.
