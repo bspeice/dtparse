@@ -12,8 +12,10 @@ use chrono::DateTime;
 use chrono::Datelike;
 use chrono::FixedOffset;
 use chrono::Local;
+use chrono::NaiveDate;
 use chrono::NaiveDateTime;
 use chrono::NaiveTime;
+use chrono::Timelike;
 use chrono::Utc;
 use num_traits::cast::ToPrimitive;
 use rust_decimal::Decimal;
@@ -64,6 +66,9 @@ pub enum ParseError {
     InvalidMonth,
     UnrecognizedToken(String),
     InvalidParseResult(ParsingResult),
+    AmPmWithoutHour,
+    InvalidHour,
+    TimezoneUnsupported,
 }
 
 impl From<ParseInternalError> for ParseError {
@@ -383,8 +388,12 @@ impl ParserInfo {
         self.hms.get(&name.to_lowercase()).cloned()
     }
 
-    fn get_ampm(&self, name: &str) -> Option<usize> {
-        self.ampm.get(&name.to_lowercase()).cloned()
+    fn get_ampm(&self, name: &str) -> Option<bool> {
+        if let Some(v) = self.ampm.get(&name.to_lowercase()) {
+            Some(v.to_owned() == 1)
+        } else {
+            None
+        }
     }
 
     fn get_pertain(&self, name: &str) -> bool {
@@ -718,7 +727,7 @@ pub struct ParsingResult {
     microsecond: Option<i32>,
     tzname: Option<String>,
     tzoffset: Option<i32>,
-    ampm: Option<usize>,
+    ampm: Option<bool>,
     century_specified: bool,
     any_unused_tokens: Vec<String>,
 }
@@ -788,9 +797,7 @@ impl Parser {
         while i < len_l {
             let value_repr = l[i].clone();
 
-            let value = value_repr.parse::<f32>();
-
-            if let Ok(v) = value {
+            if let Ok(v) = Decimal::from_str(&value_repr) {
                 i = self.parse_numeric_token(&l, i, &self.info, &mut ymd, &mut res, fuzzy)?;
             } else if let Some(value) = self.info.get_weekday(&l[i]) {
                 res.weekday = Some(value != 0);
@@ -826,7 +833,7 @@ impl Parser {
             } else if let Some(value) = self.info.get_ampm(&l[i]) {
                 let is_ampm = self.ampm_valid(res.hour, res.ampm, fuzzy);
 
-                if is_ampm {
+                if is_ampm.is_ok() {
                     res.hour = Some(self.adjust_ampm(res.hour.unwrap(), value));
                     res.ampm = Some(value);
                 } else if fuzzy {
@@ -928,15 +935,50 @@ impl Parser {
         tzoffset: Option<i32>,
         token: &str,
     ) -> bool {
-        false
+        let all_ascii_upper = token == token.to_ascii_uppercase();
+        return hour.is_some() && tzname.is_none() && tzoffset.is_none() && token.len() <= 5
+            && all_ascii_upper;
     }
 
-    fn ampm_valid(&self, hour: Option<i32>, ampm: Option<usize>, fuzzy: bool) -> bool {
-        false
+    fn ampm_valid(&self, hour: Option<i32>, ampm: Option<bool>, fuzzy: bool) -> ParseResult<bool> {
+        if fuzzy && ampm == Some(true) {
+            return Ok(false);
+        }
+
+        if hour.is_none() {
+            if fuzzy {
+                Ok(false)
+            } else {
+                Err(ParseError::AmPmWithoutHour)
+            }
+        } else if !(0 <= hour.unwrap() && hour.unwrap() <= 12) {
+            if fuzzy {
+                Ok(false)
+            } else {
+                Err(ParseError::InvalidHour)
+            }
+        } else {
+            Ok(false)
+        }
     }
 
     fn build_naive(&self, res: &ParsingResult, default: NaiveDateTime) -> NaiveDateTime {
-        Local::now().naive_local()
+        // TODO: Change month/day to u32
+        let d = NaiveDate::from_ymd(
+            res.year.unwrap_or(default.year()),
+            res.month.unwrap_or(default.month() as i32) as u32,
+            res.day.unwrap_or(default.day() as i32) as u32,
+        );
+
+        let t = NaiveTime::from_hms_micro(
+            res.hour.unwrap_or(default.hour() as i32) as u32,
+            res.minute.unwrap_or(default.minute() as i32) as u32,
+            res.second.unwrap_or(default.second() as i32) as u32,
+            res.microsecond
+                .unwrap_or(default.timestamp_subsec_micros() as i32) as u32,
+        );
+
+        NaiveDateTime::new(d, t)
     }
 
     fn build_tzaware(
@@ -944,8 +986,13 @@ impl Parser {
         dt: &NaiveDateTime,
         res: &ParsingResult,
         default: NaiveDateTime,
-    ) -> Result<FixedOffset, ParseError> {
-        Ok(FixedOffset::east(0))
+    ) -> ParseResult<FixedOffset> {
+
+        if res.tzname.is_none() && res.tzoffset.is_none() {
+            Ok(FixedOffset::east(0))
+        } else {
+            Err(ParseError::TimezoneUnsupported)
+        }
     }
 
     fn parse_numeric_token(
@@ -1085,10 +1132,10 @@ impl Parser {
         Ok(idx)
     }
 
-    fn adjust_ampm(&self, hour: i32, ampm: usize) -> i32 {
-        if hour < 12 && ampm == 1 {
+    fn adjust_ampm(&self, hour: i32, ampm: bool) -> i32 {
+        if hour < 12 && ampm {
             hour + 12
-        } else if hour == 12 && ampm == 0 {
+        } else if hour == 12 && ampm {
             0
         } else {
             hour
