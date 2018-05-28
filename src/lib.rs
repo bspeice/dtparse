@@ -590,13 +590,23 @@ impl YMD {
 
         // TODO: Why do I have to clone &usize? Isn't it Copy?
         Ok((
-            Some(self._ymd[strids.get(&YMDLabel::Year).unwrap().clone()]),
-            Some(self._ymd[strids.get(&YMDLabel::Month).unwrap().clone()]),
-            Some(self._ymd[strids.get(&YMDLabel::Day).unwrap().clone()]),
+            strids
+                .get(&YMDLabel::Year)
+                .map(|i| self._ymd.get(*i).unwrap().clone()),
+            strids
+                .get(&YMDLabel::Month)
+                .map(|i| self._ymd.get(*i).unwrap().clone()),
+            strids
+                .get(&YMDLabel::Day)
+                .map(|i| self._ymd.get(*i).unwrap().clone()),
         ))
     }
 
-    fn resolve_ymd(&mut self, yearfirst: bool, dayfirst: bool) -> ParseIResult<(Option<i32>, Option<i32>, Option<i32>)> {
+    fn resolve_ymd(
+        &mut self,
+        yearfirst: bool,
+        dayfirst: bool,
+    ) -> ParseIResult<(Option<i32>, Option<i32>, Option<i32>)> {
         let len_ymd = self._ymd.len();
         let mut year: Option<i32> = None;
         let mut month: Option<i32> = None;
@@ -612,7 +622,9 @@ impl YMD {
             .map(|u| strids.insert(YMDLabel::Day, u.clone()));
 
         // TODO: More Rustiomatic way of doing this?
-        if self._ymd.len() == strids.len() && strids.len() > 0 || (self._ymd.len() == 3 && strids.len() == 2) {
+        if self._ymd.len() == strids.len() && strids.len() > 0
+            || (self._ymd.len() == 3 && strids.len() == 2)
+        {
             return self.resolve_from_stridxs(&mut strids);
         };
 
@@ -625,7 +637,11 @@ impl YMD {
         } else if len_ymd == 1 || (self.mstridx.is_some() && len_ymd == 2) {
             if self.mstridx.is_some() {
                 month = Some(self._ymd[self.mstridx.unwrap()]);
-                other = if len_ymd == 1 { Some(self._ymd[0]) } else { Some(self._ymd[1 - self.mstridx.unwrap()]) };
+                other = if len_ymd == 1 {
+                    Some(self._ymd[0])
+                } else {
+                    Some(self._ymd[1 - self.mstridx.unwrap()])
+                };
             } else {
                 other = Some(self._ymd[0]);
             }
@@ -983,7 +999,6 @@ impl Parser {
         res: &ParsingResult,
         default: &NaiveDateTime,
     ) -> ParseResult<Option<FixedOffset>> {
-
         // TODO: Actual timezone support
         if res.tzname.is_none() && res.tzoffset.is_none() || res.tzname == Some(" ".to_owned()) {
             Ok(None)
@@ -1173,9 +1188,7 @@ impl Parser {
             hms_idx = Some(idx + 2)
         } else if idx > 0 && info.get_hms(&tokens[idx - 1]).is_some() {
             hms_idx = Some(idx - 1)
-        }
-        // TODO: The condition for this in Python seems a bit ambiguous
-        else if idx == len_l - 1 && tokens[idx - 1] == " "
+        } else if len_l > 0 && idx > 0 && idx == len_l - 1 && tokens[idx - 1] == " "
             && info.get_hms(&tokens[idx - 2]).is_some()
         {
             hms_idx = Some(idx - 2)
@@ -1262,7 +1275,10 @@ fn parse_with_info(
     parser.parse(timestr, default, false, vec![])
 }
 
-fn parse_with_default(timestr: &str, default: &NaiveDateTime) -> ParseResult<(NaiveDateTime, Option<FixedOffset>)> {
+fn parse_with_default(
+    timestr: &str,
+    default: &NaiveDateTime,
+) -> ParseResult<(NaiveDateTime, Option<FixedOffset>)> {
     let parse_result = parse_with_info(timestr, ParserInfo::default(), Some(default))?;
     Ok((parse_result.0, parse_result.1))
 }
