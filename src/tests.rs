@@ -43,7 +43,13 @@ macro_rules! test_parse_naive {
 
         println!("{}", s);
 
-        let rs = parse($s).unwrap();
+        let r_rs = parse($s);
+        if r_rs.is_err() {
+            println!("{:?}", r_rs);
+            assert!(false);
+        }
+
+        let rs = r_rs.unwrap();
         assert_eq!(rs.1, None);
         assert_eq!(s, format!("{}", rs.0));
     };

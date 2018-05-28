@@ -42,7 +42,7 @@ lazy_static! {
 pub enum ParseInternalError {
     // Errors that indicate internal bugs
     YMDEarlyResolve,
-    YMDValueUnset,
+    YMDValueUnset(Vec<YMDLabel>),
     ParseIndexError,
     InvalidDecimal,
     InvalidInteger,
@@ -467,7 +467,7 @@ fn days_in_month(year: i32, month: i32) -> Result<i32, ParseError> {
 }
 
 #[derive(Debug, Hash, PartialEq, Eq)]
-enum YMDLabel {
+pub enum YMDLabel {
     Year,
     Month,
     Day,
@@ -507,6 +507,7 @@ impl YMD {
     fn append(&mut self, val: i32, label: Option<YMDLabel>) -> ParseIResult<()> {
         let mut label = label;
 
+        // TODO: Duck typing with val being an array type?
         if val > 100 {
             self.century_specified = true;
             match label {
@@ -520,6 +521,8 @@ impl YMD {
                 }
             }
         }
+
+        self._ymd.push(val);
 
         match label {
             Some(YMDLabel::Month) => {
@@ -609,8 +612,8 @@ impl YMD {
             .map(|u| strids.insert(YMDLabel::Day, u.clone()));
 
         // TODO: More Rustiomatic way of doing this?
-        if let Ok(ymd) = self.resolve_from_stridxs(&mut strids) {
-            return Ok(ymd);
+        if self._ymd.len() == strids.len() && strids.len() > 0 || (self._ymd.len() == 3 && strids.len() == 2) {
+            return self.resolve_from_stridxs(&mut strids);
         };
 
         // TODO: More Rustiomatic? Too many blocks for my liking
@@ -622,7 +625,7 @@ impl YMD {
         } else if len_ymd == 1 || (self.mstridx.is_some() && len_ymd == 2) {
             if self.mstridx.is_some() {
                 month = Some(self._ymd[self.mstridx.unwrap()]);
-                other = Some(self._ymd[self.mstridx.unwrap() - 1]);
+                other = if len_ymd == 1 { Some(self._ymd[0]) } else { Some(self._ymd[1 - self.mstridx.unwrap()]) };
             } else {
                 other = Some(self._ymd[0]);
             }
@@ -710,7 +713,11 @@ impl YMD {
         // We should be able to justify the UNWRAP, but I haven't
         // convinced myself of that quite yet.
         if !year.and(month).and(day).is_some() {
-            Err(ParseInternalError::YMDValueUnset)
+            let mut ymd_unset = Vec::new();
+            if year.is_none() { ymd_unset.push(YMDLabel::Year) }
+            else if month.is_none() { ymd_unset.push(YMDLabel::Month) }
+            else { ymd_unset.push(YMDLabel::Day) }
+            Err(ParseInternalError::YMDValueUnset(ymd_unset))
         } else {
             Ok((year.unwrap(), month.unwrap(), day.unwrap()))
         }
