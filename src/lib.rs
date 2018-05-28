@@ -652,8 +652,7 @@ impl YMD {
                 day = Some(self._ymd[1]);
             }
         } else if len_ymd == 3 {
-            // UNWRAP: 3 elements guarantees all indices are Some
-            if self.mstridx.unwrap() == 0 {
+            if self.mstridx == Some(0) {
                 if self._ymd[1] > 31 {
                     month = Some(self._ymd[0]);
                     year = Some(self._ymd[1]);
@@ -663,7 +662,7 @@ impl YMD {
                     day = Some(self._ymd[1]);
                     year = Some(self._ymd[2]);
                 }
-            } else if self.mstridx.unwrap() == 1 {
+            } else if self.mstridx == Some(1) {
                 if self._ymd[0] > 31 || (yearfirst && self._ymd[2] <= 31) {
                     year = Some(self._ymd[0]);
                     month = Some(self._ymd[1]);
@@ -673,7 +672,7 @@ impl YMD {
                     month = Some(self._ymd[1]);
                     year = Some(self._ymd[2]);
                 }
-            } else if self.mstridx.unwrap() == 2 {
+            } else if self.mstridx == Some(2) {
                 // It was in the original docs, so: WTF!?
                 if self._ymd[1] > 31 {
                     day = Some(self._ymd[0]);
@@ -766,7 +765,7 @@ impl Parser {
 
         if !ignoretz {
             let offset = self.build_tzaware(&naive, &res, default_ts);
-            Ok((naive, Some(offset.unwrap()), tokens))
+            Ok((naive, offset.unwrap(), tokens))
         } else {
             Ok((naive, None, tokens))
         }
@@ -995,10 +994,10 @@ impl Parser {
         dt: &NaiveDateTime,
         res: &ParsingResult,
         default: NaiveDateTime,
-    ) -> ParseResult<FixedOffset> {
+    ) -> ParseResult<Option<FixedOffset>> {
 
         if res.tzname.is_none() && res.tzoffset.is_none() {
-            Ok(FixedOffset::east(0))
+            Ok(None)
         } else {
             Err(ParseError::TimezoneUnsupported)
         }
@@ -1124,6 +1123,8 @@ impl Parser {
                 let hour = value.to_i64().unwrap() as i32;
                 let ampm = info.get_ampm(&tokens[idx + 2]).unwrap();
                 res.hour = Some(self.adjust_ampm(hour, ampm));
+            } else {
+                ymd.append(value.floor().to_i64().unwrap() as i32, None);
             }
         } else if info.get_ampm(&tokens[idx + 1]).is_some()
             && (*ZERO <= value && value < *TWENTY_FOUR)

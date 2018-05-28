@@ -38,7 +38,7 @@ fn test_split() {
 macro_rules! test_parse_naive {
     ($py: ident, $parser: ident, $s: expr) => {
         let dt: PyObject = $parser.call_method1("parse", $s).unwrap().extract().unwrap();
-        let dt_s: String = dt.call_method0($py, "isoformat").unwrap().extract($py).unwrap();
+        let dt_s: String = dt.call_method1($py, "isoformat", " ").unwrap().extract($py).unwrap();
         let s = format!("{}", dt_s);
 
         println!("{}", s);
@@ -61,5 +61,9 @@ fn test_parse() {
     let py = gil.python();
     let parser = py.import("dateutil.parser").unwrap();
 
+    test_parse_naive!(py, parser, "2018.5.15");
     test_parse_naive!(py, parser, "May 5, 2018");
+    test_parse_naive!(py, parser, "Mar. 5, 2018");
+    test_parse_naive!(py, parser, "19990101T23");
+    test_parse_naive!(py, parser, "19990101T2359");
 }
