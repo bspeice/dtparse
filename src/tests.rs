@@ -15,6 +15,8 @@ use parse;
 use parse_with_default;
 use tokenize;
 
+static FORMAT: &str = "%Y-%m-%d %H:%M:%S.%f";
+
 macro_rules! test_split {
     ($py:ident, $timelex:ident, $s:expr) => {
         let f = $timelex.call_method1($py, "split", $s).unwrap();
@@ -50,13 +52,10 @@ macro_rules! test_parse_naive {
             .unwrap()
             .extract()
             .unwrap();
-        let dt_s: String = dt.call_method1($py, "isoformat", " ")
+        let dt_s: String = dt.call_method1($py, "strftime", FORMAT)
             .unwrap()
             .extract($py)
             .unwrap();
-        let s = format!("{}", dt_s);
-
-        println!("{}", s);
 
         let r_rs = parse($s);
         if r_rs.is_err() {
@@ -66,7 +65,10 @@ macro_rules! test_parse_naive {
 
         let rs = r_rs.unwrap();
         assert_eq!(rs.1, None);
-        assert_eq!(s, format!("{}", rs.0));
+        // Because chrono stores nanos, and python goes to micros,
+        // we have to trim a couple things off the end.
+        let rs_formatted = format!("{}", rs.0.format(FORMAT));
+        assert_eq!(dt_s, rs_formatted[..rs_formatted.len()-3]);
     };
 
     // Handle tests with some ambiguity, and thus needing a `default`
@@ -83,11 +85,10 @@ macro_rules! test_parse_naive {
             .unwrap()
             .extract()
             .unwrap();
-        let dt_s: String = dt.call_method1($py, "isoformat", " ")
+        let dt_s: String = dt.call_method1($py, "strftime", FORMAT)
             .unwrap()
             .extract($py)
             .unwrap();
-        let s = format!("{}", dt_s);
 
         let r_rs = parse_with_default($s, $d);
         if r_rs.is_err() {
@@ -97,7 +98,10 @@ macro_rules! test_parse_naive {
 
         let rs = r_rs.unwrap();
         assert_eq!(rs.1, None);
-        assert_eq!(s, format!("{}", rs.0));
+        // Because chrono stores nanos, and python goes to micros,
+        // we have to trim a couple things off the end.
+        let rs_formatted = format!("{}", rs.0.format(FORMAT));
+        assert_eq!(dt_s, rs_formatted[..rs_formatted.len()-3]);
     };
 }
 
@@ -142,11 +146,43 @@ fn test_dateutil_compat() {
     test_parse_naive!(py, parser, "10:36", datetime, &default);
     // testDateCommandFormatStrip8
     test_parse_naive!(py, parser, "Thu Sep 25 2003", datetime, &default);
-    // TODO: What happened to testDateCommandFormatStrip9?
     // testDateCommandFormatStrip10
     test_parse_naive!(py, parser, "Sep 2003", datetime, &default);
     // testDateCommandFormatStrip11
     test_parse_naive!(py, parser, "Sep", datetime, &default);
     // testDateCommandFormatStrip12
     test_parse_naive!(py, parser, "2003", datetime, &default);
+
+    // testISOFormatStrip2
+    test_parse_naive!(py, parser, "2003-09-25T10:49:41", datetime, &default);
+    // testISOFormatStrip3
+    test_parse_naive!(py, parser, "2003-09-25T10:49", datetime, &default);
+    // testISOFormatStrip4
+    test_parse_naive!(py, parser, "2003-09-25T10", datetime, &default);
+    // testISOFormatStrip5
+    test_parse_naive!(py, parser, "2003-09-25", datetime, &default);
+
+    // testISOStrippedFormatStrip2
+    test_parse_naive!(py, parser, "20030925T104941", datetime, &default);
+    // testISOStrippedFormatStrip3
+    test_parse_naive!(py, parser, "20030925T1049", datetime, &default);
+    // testISOStrippedFormatStrip4
+    test_parse_naive!(py, parser, "20030925T10", datetime, &default);
+    // testISOStrippedFormatStrip5
+    test_parse_naive!(py, parser, "20030925", datetime, &default);
+
+    // testPythonLoggerFormat
+    test_parse_naive!(py, parser, "2003-09-25 10:49:41,502", datetime, &default);
+
+    // testNoSeparator1
+    test_parse_naive!(py, parser, "199709020908", datetime, &default);
+    // testNoSeparator1
+    test_parse_naive!(py, parser, "19970902090807", datetime, &default);
+
+    // testDateWithDash1
+    test_parse_naive!(py, parser, "2003-09-25", datetime, &default);
+    // testDateWithDash6
+    test_parse_naive!(py, parser, "09-25-2003", datetime, &default);
+    // testDateWithDash7
+    test_parse_naive!(py, parser, "25-09-2003", datetime, &default);
 }

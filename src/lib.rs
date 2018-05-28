@@ -88,7 +88,7 @@ pub struct Tokenizer {
     parse_string: String,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 enum ParseState {
     Empty,
     Alpha,
@@ -223,7 +223,12 @@ impl Iterator for Tokenizer {
 
         self.token_stack.append(&mut tokens);
         // UNWRAP: Previous match guaranteed that at least one token was added
-        Some(self.token_stack.pop().unwrap())
+        let token = self.token_stack.pop().unwrap();
+        if state == ParseState::NumericDecimal && !token.contains(".") {
+            Some(token.replace(",", "."))
+        } else {
+            Some(token)
+        }
     }
 }
 
