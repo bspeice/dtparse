@@ -562,8 +562,8 @@ impl YMD {
     fn resolve_from_stridxs(
         &mut self,
         strids: &mut HashMap<YMDLabel, usize>,
-    ) -> ParseIResult<(i32, i32, i32)> {
-        if strids.len() == 2 {
+    ) -> ParseIResult<(Option<i32>, Option<i32>, Option<i32>)> {
+        if self._ymd.len() == 3 && strids.len() == 2 {
             let missing_key = if !strids.contains_key(&YMDLabel::Year) {
                 YMDLabel::Year
             } else if !strids.contains_key(&YMDLabel::Month) {
@@ -584,19 +584,19 @@ impl YMD {
             strids.insert(missing_key, missing_val);
         }
 
-        if self._ymd.len() != 3 || strids.len() != 3 {
+        if self._ymd.len() != strids.len() {
             return Err(ParseInternalError::YMDEarlyResolve);
         }
 
         // TODO: Why do I have to clone &usize? Isn't it Copy?
         Ok((
-            self._ymd[strids.get(&YMDLabel::Year).unwrap().clone()],
-            self._ymd[strids.get(&YMDLabel::Month).unwrap().clone()],
-            self._ymd[strids.get(&YMDLabel::Day).unwrap().clone()],
+            Some(self._ymd[strids.get(&YMDLabel::Year).unwrap().clone()]),
+            Some(self._ymd[strids.get(&YMDLabel::Month).unwrap().clone()]),
+            Some(self._ymd[strids.get(&YMDLabel::Day).unwrap().clone()]),
         ))
     }
 
-    fn resolve_ymd(&mut self, yearfirst: bool, dayfirst: bool) -> ParseIResult<(i32, i32, i32)> {
+    fn resolve_ymd(&mut self, yearfirst: bool, dayfirst: bool) -> ParseIResult<(Option<i32>, Option<i32>, Option<i32>)> {
         let len_ymd = self._ymd.len();
         let mut year: Option<i32> = None;
         let mut month: Option<i32> = None;
@@ -708,18 +708,7 @@ impl YMD {
             }
         }
 
-        // TODO: Remove the error handling here
-        // We should be able to justify the UNWRAP, but I haven't
-        // convinced myself of that quite yet.
-        if !year.and(month).and(day).is_some() {
-            let mut ymd_unset = Vec::new();
-            if year.is_none() { ymd_unset.push(YMDLabel::Year) }
-            else if month.is_none() { ymd_unset.push(YMDLabel::Month) }
-            else { ymd_unset.push(YMDLabel::Day) }
-            Err(ParseInternalError::YMDValueUnset(ymd_unset))
-        } else {
-            Ok((year.unwrap(), month.unwrap(), day.unwrap()))
-        }
+        Ok((year, month, day))
     }
 }
 
@@ -749,22 +738,21 @@ impl Parser {
     pub fn parse(
         &mut self,
         timestr: &str,
-        default: Option<NaiveDateTime>,
+        default: Option<&NaiveDateTime>,
         ignoretz: bool,
         tzinfos: Vec<String>,
     ) -> Result<(NaiveDateTime, Option<FixedOffset>, Option<Vec<String>>), ParseError> {
-        let now = Local::now().naive_local();
-        let default_date = default.unwrap_or(now).date();
+        let default_date = default.unwrap_or(&Local::now().naive_local()).date();
 
         let default_ts = NaiveDateTime::new(default_date, NaiveTime::from_hms(0, 0, 0));
 
         // TODO: What should be done with the tokens?
         let (res, tokens) = self.parse_with_tokens(timestr, None, None, false, false)?;
 
-        let naive = self.build_naive(&res, default_ts);
+        let naive = self.build_naive(&res, &default_ts);
 
         if !ignoretz {
-            let offset = self.build_tzaware(&naive, &res, default_ts);
+            let offset = self.build_tzaware(&naive, &res, &default_ts);
             Ok((naive, offset.unwrap(), tokens))
         } else {
             Ok((naive, None, tokens))
@@ -922,9 +910,9 @@ impl Parser {
         let (year, month, day) = ymd.resolve_ymd(yearfirst, dayfirst)?;
 
         res.century_specified = ymd.century_specified;
-        res.year = Some(year);
-        res.month = Some(month);
-        res.day = Some(day);
+        res.year = year;
+        res.month = month;
+        res.day = day;
 
         if !self.info.validate(&mut res) {
             Err(ParseError::InvalidParseResult(res))
@@ -970,7 +958,7 @@ impl Parser {
         }
     }
 
-    fn build_naive(&self, res: &ParsingResult, default: NaiveDateTime) -> NaiveDateTime {
+    fn build_naive(&self, res: &ParsingResult, default: &NaiveDateTime) -> NaiveDateTime {
         // TODO: Change month/day to u32
         let d = NaiveDate::from_ymd(
             res.year.unwrap_or(default.year()),
@@ -993,12 +981,14 @@ impl Parser {
         &self,
         dt: &NaiveDateTime,
         res: &ParsingResult,
-        default: NaiveDateTime,
+        default: &NaiveDateTime,
     ) -> ParseResult<Option<FixedOffset>> {
 
-        if res.tzname.is_none() && res.tzoffset.is_none() {
+        // TODO: Actual timezone support
+        if res.tzname.is_none() && res.tzoffset.is_none() || res.tzname == Some(" ".to_owned()) {
             Ok(None)
         } else {
+            println!("Tzname: {:?}, Tzoffset: {:?}", res.tzname, res.tzoffset);
             Err(ParseError::TimezoneUnsupported)
         }
     }
@@ -1265,13 +1255,19 @@ fn ljust(s: &str, chars: usize, replace: char) -> String {
 fn parse_with_info(
     timestr: &str,
     info: ParserInfo,
+    default: Option<&NaiveDateTime>,
 ) -> ParseResult<(NaiveDateTime, Option<FixedOffset>, Option<Vec<String>>)> {
     // TODO: Is `::new()` more stylistic?
     let mut parser = Parser { info: info };
-    parser.parse(timestr, None, false, vec![])
+    parser.parse(timestr, default, false, vec![])
+}
+
+fn parse_with_default(timestr: &str, default: &NaiveDateTime) -> ParseResult<(NaiveDateTime, Option<FixedOffset>)> {
+    let parse_result = parse_with_info(timestr, ParserInfo::default(), Some(default))?;
+    Ok((parse_result.0, parse_result.1))
 }
 
 fn parse(timestr: &str) -> ParseResult<(NaiveDateTime, Option<FixedOffset>)> {
-    let parse_result = parse_with_info(timestr, ParserInfo::default())?;
+    let parse_result = parse_with_info(timestr, ParserInfo::default(), None)?;
     Ok((parse_result.0, parse_result.1))
 }
