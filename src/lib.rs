@@ -122,7 +122,6 @@ impl Iterator for Tokenizer {
         let mut state = ParseState::Empty;
 
         while let Some(next) = self.parse_string.pop() {
-            println!("{} - {:?}", next, state);
             match state {
                 ParseState::Empty => {
                     if next.is_numeric() {
@@ -743,7 +742,7 @@ struct Parser {
 impl Parser {
     pub fn parse(
         &mut self,
-        timestr: String,
+        timestr: &str,
         default: Option<NaiveDateTime>,
         ignoretz: bool,
         tzinfos: Vec<String>,
@@ -768,7 +767,7 @@ impl Parser {
 
     fn parse_with_tokens(
         &mut self,
-        timestr: String,
+        timestr: &str,
         dayfirst: Option<bool>,
         yearfirst: Option<bool>,
         fuzzy: bool,
@@ -1256,7 +1255,7 @@ fn ljust(s: &str, chars: usize, replace: char) -> String {
 }
 
 fn parse_with_info(
-    timestr: String,
+    timestr: &str,
     info: ParserInfo,
 ) -> ParseResult<(NaiveDateTime, Option<FixedOffset>, Option<Vec<String>>)> {
     // TODO: Is `::new()` more stylistic?
@@ -1264,7 +1263,7 @@ fn parse_with_info(
     parser.parse(timestr, None, false, vec![])
 }
 
-fn parse(timestr: String) -> ParseResult<(NaiveDateTime, Option<FixedOffset>)> {
+fn parse(timestr: &str) -> ParseResult<(NaiveDateTime, Option<FixedOffset>)> {
     let parse_result = parse_with_info(timestr, ParserInfo::default())?;
     Ok((parse_result.0, parse_result.1))
 }
