@@ -8,9 +8,6 @@ extern crate chrono;
 extern crate num_traits;
 extern crate rust_decimal;
 
-#[cfg(test)]
-extern crate pyo3;
-
 use chrono::DateTime;
 use chrono::Datelike;
 use chrono::FixedOffset;
@@ -27,9 +24,6 @@ use std::collections::HashMap;
 use std::num::ParseIntError;
 use std::str::FromStr;
 use std::vec::Vec;
-
-#[cfg(test)]
-mod tests;
 
 lazy_static! {
     static ref ZERO: Decimal = Decimal::new(0, 0);
@@ -311,7 +305,7 @@ fn parse_info(vec: Vec<Vec<&str>>) -> HashMap<String, usize> {
 }
 
 #[derive(Debug, PartialEq)]
-struct ParserInfo {
+pub struct ParserInfo {
     jump: HashMap<String, usize>,
     weekday: HashMap<String, usize>,
     months: HashMap<String, usize>,
@@ -705,7 +699,7 @@ impl YMD {
                     month = Some(self._ymd[2]);
                 }
             } else {
-                if self._ymd[0] > 31 || self.ystridx.unwrap() == 0
+                if self._ymd[0] > 31 || self.ystridx == Some(0)
                     || (yearfirst && self._ymd[1] <= 12 && self._ymd[2] <= 31)
                 {
                     if dayfirst && self._ymd[2] <= 12 {
@@ -1270,7 +1264,7 @@ fn ljust(s: &str, chars: usize, replace: char) -> String {
     }
 }
 
-fn parse_with_info(
+pub fn parse_with_info(
     timestr: &str,
     info: ParserInfo,
     default: Option<&NaiveDateTime>,
@@ -1280,7 +1274,7 @@ fn parse_with_info(
     parser.parse(timestr, default, false, vec![])
 }
 
-fn parse_with_default(
+pub fn parse_with_default(
     timestr: &str,
     default: &NaiveDateTime,
 ) -> ParseResult<(NaiveDateTime, Option<FixedOffset>)> {
@@ -1288,7 +1282,7 @@ fn parse_with_default(
     Ok((parse_result.0, parse_result.1))
 }
 
-fn parse(timestr: &str) -> ParseResult<(NaiveDateTime, Option<FixedOffset>)> {
+pub fn parse(timestr: &str) -> ParseResult<(NaiveDateTime, Option<FixedOffset>)> {
     let parse_result = parse_with_info(timestr, ParserInfo::default(), None)?;
     Ok((parse_result.0, parse_result.1))
 }
