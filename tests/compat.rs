@@ -45,8 +45,6 @@ fn test_split() {
 
 macro_rules! test_parse {
     ($py:ident, $parser:ident, $datetime:ident, $s:expr) => {
-        println!("Attempting to parse: {}", $s);
-
         let default_pydate = $datetime
             .call_method1("datetime", (2003, 9, 25))
             .expect("Unable to create default datetime");
@@ -85,49 +83,49 @@ macro_rules! test_parse {
                 .expect("Unable to get `year` value")
                 .extract($py)
                 .expect("Unable to convert `year` to i32");
-            assert_eq!(py_year, rs_dt.year());
+            assert_eq!(py_year, rs_dt.year(), "Mismatched year for '{}'", $s);
 
             let py_month: u32 = py_parsed
                 .getattr($py, "month")
                 .expect("Unable to get `month` value")
                 .extract($py)
                 .expect("Unable to convert `month` to u32");
-            assert_eq!(py_month, rs_dt.month());
+            assert_eq!(py_month, rs_dt.month(), "Mismatched month for '{}'", $s);
 
             let py_day: u32 = py_parsed
                 .getattr($py, "day")
                 .expect("Unable to get `day` value")
                 .extract($py)
                 .expect("Unable to convert `day` to u32");
-            assert_eq!(py_day, rs_dt.day());
+            assert_eq!(py_day, rs_dt.day(), "Mismatched day for '{}'", $s);
 
             let py_hour: u32 = py_parsed
                 .getattr($py, "hour")
                 .expect("Unable to get `hour` value")
                 .extract($py)
                 .expect("Unable to convert `hour` to u32");
-            assert_eq!(py_hour, rs_dt.hour());
+            assert_eq!(py_hour, rs_dt.hour(), "Mismatched hour for '{}'", $s);
 
             let py_minute: u32 = py_parsed
                 .getattr($py, "minute")
                 .expect("Unable to get `minute` value")
                 .extract($py)
                 .expect("Unable to convert `minute` to u32");
-            assert_eq!(py_minute, rs_dt.minute());
+            assert_eq!(py_minute, rs_dt.minute(), "Mismatched minute for '{}'", $s);
 
             let py_second: u32 = py_parsed
                 .getattr($py, "second")
                 .expect("Unable to get `second` value")
                 .extract($py)
                 .expect("Unable to convert `second` to u32");
-            assert_eq!(py_second, rs_dt.second());
+            assert_eq!(py_second, rs_dt.second(), "Mismatched second for '{}'", $s);
 
             let py_microsecond: u32 = py_parsed
                 .getattr($py, "microsecond")
                 .expect("Unable to get `microsecond` value")
                 .extract($py)
                 .expect("Unable to convert `microsecond` to u32");
-            assert_eq!(py_microsecond, rs_dt.nanosecond() / 1000);
+            assert_eq!(py_microsecond, rs_dt.nanosecond() / 1000, "Mismatched microsecond for '{}'", $s);
         }
     };
 }
@@ -262,7 +260,147 @@ fn test_dateutil_compat() {
     test_parse!(py, parser, datetime, "03 25 Sep");
     // testStrangelyOrderedDate3
     test_parse!(py, parser, datetime, "25 03 Sep");
-    // TODO: Fix UnrecognizedToken error
     // testHourWithLetters
-    // test_parse!(py, parser, datetime, "10h36m28.5s");
+    test_parse!(py, parser, datetime, "10h36m28.5s");
+    // testHourWithLettersStrip1
+    test_parse!(py, parser, datetime, "10h36m28s");
+    // testHourWithLettersStrip2
+    test_parse!(py, parser, datetime, "10h36m");
+    // testHourWithLettersStrip3
+    test_parse!(py, parser, datetime, "10h");
+    // testHourWithLettersStrip4
+    test_parse!(py, parser, datetime, "10 h 36");
+
+    // TODO: Fix half a minute being 30 seconds
+    // testHourWithLettersStrip5
+
+    // test_parse!(py, parser, datetime, "10 h 36.5");
+    // testMinuteWithLettersSpaces1
+    test_parse!(py, parser, datetime, "36 m 5");
+    // testMinuteWithLettersSpaces2
+    test_parse!(py, parser, datetime, "36 m 5 s");
+    // testMinuteWithLettersSpaces3
+    test_parse!(py, parser, datetime, "36 m 05");
+    // testMinuteWithLettersSpaces4
+    test_parse!(py, parser, datetime, "36 m 05 s");
+
+    // TODO: Add testAMPMNoHour
+
+    // testHourAmPm1
+    test_parse!(py, parser, datetime, "10h am");
+    // testHourAmPm2
+    test_parse!(py, parser, datetime, "10h pm");
+    // testHourAmPm3
+    test_parse!(py, parser, datetime, "10am");
+    // testHourAmPm4
+    test_parse!(py, parser, datetime, "10pm");
+    // testHourAmPm5
+    test_parse!(py, parser, datetime, "10:00 am");
+    // testHourAmPm6
+    test_parse!(py, parser, datetime, "10:00 pm");
+    // testHourAmPm7
+    test_parse!(py, parser, datetime, "10:00am");
+    // testHourAmPm8
+    test_parse!(py, parser, datetime, "10:00pm");
+    // testHourAmPm9
+    test_parse!(py, parser, datetime, "10:00a.m");
+    // testHourAmPm10
+    test_parse!(py, parser, datetime, "10:00p.m");
+    // testHourAmPm11
+    test_parse!(py, parser, datetime, "10:00a.m.");
+    // testHourAmPm12
+    test_parse!(py, parser, datetime, "10:00p.m.");
+
+    // TODO: Add testAMPMRange
+
+    // testPertain
+    test_parse!(py, parser, datetime, "Sep 03");
+    test_parse!(py, parser, datetime, "Sep of 03");
+
+    // TODO: Handle weekdays, rather than absolute days
+    // testWeekdayAlone
+    // test_parse!(py, parser, datetime, "Wed");
+    // testLongWeekday
+    // test_parse!(py, parser, datetime, "Wednesday");
+
+    // testLongMonth
+    test_parse!(py, parser, datetime, "October");
+    // testZeroYear
+    test_parse!(py, parser, datetime, "31-Dec-00");
+
+    // TODO: Handle fuzzy tests
+
+    // testExtraSpace
+    test_parse!(py, parser, datetime, "  July   4 ,  1976   12:01:02   am  ");
+
+    // testRandomFormat1
+    test_parse!(py, parser, datetime, "Wed, July 10, '96");
+    // testRandomFormat2 - Needs `ignoretz`
+    // test_parse!(py, parser, datetime, "1996.07.10 AD at 15:08:56 PDT");
+
+    // testRandomFormat3
+    test_parse!(py, parser, datetime, "1996.July.10 AD 12:08 PM");
+
+    // testRandomFormat4 - Needs `ignoretz`
+    // test_parse!(py, parser, datetime, "Tuesday, April 12, 1952 AD 3:30:42pm PST");
+    // testRandomFormat5 - Needs `ignoretz`
+    // test_parse!(py, parser, datetime, "November 5, 1994, 8:15:30 am EST");
+    // testRandomFormat6 - Needs `ignoretz`
+    // test_parse!(py, parser, datetime, "1994-11-05T08:15:30-05:00");
+    // testRandomFormat7 - Needs `ignoretz`
+    // test_parse!(py, parser, datetime, "1994-11-05T08:15:30Z");
+    // testRandomFormat8
+    test_parse!(py, parser, datetime, "July 4, 1976");
+    // testRandomFormat9
+    test_parse!(py, parser, datetime, "7 4 1976");
+    // testRandomFormat10
+    test_parse!(py, parser, datetime, "4 jul 1976");
+    // testRandomFormat11
+    test_parse!(py, parser, datetime, "7-4-76");
+    // testRandomFormat12
+    test_parse!(py, parser, datetime, "19760704");
+    // testRandomFormat13
+    test_parse!(py, parser, datetime, "0:01:02");
+    // testRandomFormat14
+    test_parse!(py, parser, datetime, "12h 01m02s am");
+    // testRandomFormat15; NB: testRandomFormat16 is exactly the same
+    test_parse!(py, parser, datetime, "0:01:02 on July 4, 1976");
+    // testRandomFormat17 - Needs `ignoretz`
+    // test_parse!(py, parser, datetime, "1976-07-04T00:01:02Z");
+    // testRandomFormat18
+    test_parse!(py, parser, datetime, "July 4, 1976 12:01:02 am");
+    // testRandomFormat19
+    test_parse!(py, parser, datetime, "Mon Jan  2 04:24:27 1995");
+    // testRandomFormat20 - Needs `ignoretz`
+    // test_parse!(py, parser, datetime, "Tue Apr 4 00:22:12 PDT 1995");
+    // testRandomFormat21
+    test_parse!(py, parser, datetime, "04.04.95 00:22");
+    // testRandomFormat22
+    test_parse!(py, parser, datetime, "Jan 1 1999 11:23:34.578");
+    // testRandomFormat23
+    test_parse!(py, parser, datetime, "950404 122212");
+    // testRandomFormat24 - Needs `ignoretz`
+    // test_parse!(py, parser, datetime, "0:00 PM, PST");
+    // testRandomFormat25
+    test_parse!(py, parser, datetime, "12:08 PM");
+    // testRandomFormat26
+    test_parse!(py, parser, datetime, "5:50 A.M. on June 13, 1990");
+    // testRandomFormat27
+    test_parse!(py, parser, datetime, "3rd of May 2001");
+    // testRandomFormat28
+    test_parse!(py, parser, datetime, "5th of March 2001");
+    // testRandomFormat29
+    test_parse!(py, parser, datetime, "1st of May 2003");
+    // testRandomFormat30
+    test_parse!(py, parser, datetime, "01h02m03");
+    // testRandomFormat31
+    test_parse!(py, parser, datetime, "01h02");
+    // testRandomFormat32
+    test_parse!(py, parser, datetime, "01h02s");
+    // testRandomFormat33
+    test_parse!(py, parser, datetime, "01m02");
+    // testRandomFormat34
+    test_parse!(py, parser, datetime, "01m02h");
+    // testRandomFormat35
+    test_parse!(py, parser, datetime, "2004 10 Apr 11h30m");
 }

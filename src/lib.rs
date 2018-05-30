@@ -974,6 +974,8 @@ impl Parser {
     }
 
     fn build_naive(&self, res: &ParsingResult, default: &NaiveDateTime) -> NaiveDateTime {
+        // TODO: Handle weekday here
+
         // TODO: Change month/day to u32
         let d = NaiveDate::from_ymd(
             res.year.unwrap_or(default.year()),
@@ -999,7 +1001,9 @@ impl Parser {
         default: &NaiveDateTime,
     ) -> ParseResult<Option<FixedOffset>> {
         // TODO: Actual timezone support
-        if res.tzname.is_none() && res.tzoffset.is_none() || res.tzname == Some(" ".to_owned()) {
+        if res.tzname.is_none() && res.tzoffset.is_none() || res.tzname == Some(" ".to_owned())
+            || res.tzname == Some(".".to_owned())
+        {
             Ok(None)
         } else {
             println!("Tzname: {:?}, Tzoffset: {:?}", res.tzname, res.tzoffset);
@@ -1070,11 +1074,12 @@ impl Parser {
             }
         } else if let Some(hms_idx) = self.find_hms_index(idx, tokens, info, true) {
             // HH[ ]h or MM[ ]m or SS[.ss][ ]s
-            let (idx, hms) = self.parse_hms(idx, tokens, info, Some(hms_idx));
+            let (new_idx, hms) = self.parse_hms(idx, tokens, info, Some(hms_idx));
             if hms.is_some() {
                 // TODO: This unwrap is unjustified.
                 self.assign_hms(res, value_repr, hms.unwrap());
             }
+            idx = new_idx;
         } else if idx + 2 < len_l && tokens[idx + 1] == ":" {
             // HH:MM[:SS[.ss]]
             // TODO: Better story around Decimal handling
@@ -1149,7 +1154,7 @@ impl Parser {
     fn adjust_ampm(&self, hour: i32, ampm: bool) -> i32 {
         if hour < 12 && ampm {
             hour + 12
-        } else if hour == 12 && ampm {
+        } else if hour == 12 && !ampm {
             0
         } else {
             hour
@@ -1223,14 +1228,18 @@ impl Parser {
 
         if hms == 0 {
             res.hour = Some(value.to_i64().unwrap() as i32);
-            if close_to_integer(&value) {
+            if !close_to_integer(&value) {
                 // TODO: High probability of issues with rounding here.
                 res.minute = Some((*SIXTY * (value % *ONE)).to_i64().unwrap() as i32);
             }
         } else if hms == 1 {
             let (min, sec) = self.parse_min_sec(value);
+            res.minute = Some(min);
+            res.second = sec;
         } else if hms == 2 {
             let (sec, micro) = self.parsems(value_repr).unwrap();
+            res.second = Some(sec);
+            res.microsecond = Some(micro);
         }
     }
 
