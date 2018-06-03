@@ -5,6 +5,7 @@ use chrono::Datelike;
 use chrono::NaiveDate;
 use chrono::Timelike;
 use pyo3::ObjectProtocol;
+use pyo3::PyBool;
 use pyo3::PyDict;
 use pyo3::PyList;
 use pyo3::PyObject;
@@ -13,7 +14,8 @@ use std::collections::HashMap;
 
 extern crate dtparse;
 
-use dtparse::parse_with_default;
+use dtparse::Parser;
+use dtparse::ParserInfo;
 use dtparse::tokenize;
 
 macro_rules! test_split {
@@ -44,7 +46,21 @@ fn test_split() {
 }
 
 macro_rules! test_parse {
-    ($py:ident, $parser:ident, $datetime:ident, $s:expr) => {
+    // Full parsing options
+    (
+        $py:ident,
+        $parser:ident,
+        $datetime:ident,
+        $info:expr,
+        $s:expr,
+        $dayfirst:expr,
+        $yearfirst:expr,
+        $fuzzy:expr,
+        $fuzzy_with_tokens:expr,
+        $default:expr,
+        $ignoretz:expr,
+        $tzinfos:expr
+    ) => {
         let default_pydate = $datetime
             .call_method1("datetime", (2003, 9, 25))
             .expect("Unable to create default datetime");
@@ -55,15 +71,30 @@ macro_rules! test_parse {
         kwargs.insert("default", default_pydate);
         kwargs.insert("tzinfos", default_tzinfos.into());
 
+        let py_true = PyBool::new($py, true);
+        if $dayfirst == Some(true) {
+            kwargs.insert("dayfirst", py_true.into());
+        }
+        if $yearfirst == Some(true) {
+            kwargs.insert("yearfirst", py_true.into());
+        }
+
         let py_parsed: PyObject = $parser
             .call_method("parse", $s, kwargs)
             .expect("Unable to call method `parse`")
             .extract()
             .expect("Unable to extract result of `parse` call");
 
-        let default_rsdate = &NaiveDate::from_ymd(2003, 9, 25).and_hms(0, 0, 0);
-        let rs_parsed =
-            parse_with_default($s, default_rsdate).expect("Unable to parse date in Rust");
+        let mut parser = Parser::new($info);
+        let rs_parsed = parser.parse(
+            $s,
+            $dayfirst,
+            $yearfirst,
+            $fuzzy,
+            $fuzzy_with_tokens,
+            $default,
+            $ignoretz,
+            $tzinfos).expect("Unable to parse date in Rust");
 
         if let Some(_offset) = rs_parsed.1 {
             // TODO: Handle tests involving timezones
@@ -125,8 +156,82 @@ macro_rules! test_parse {
                 .expect("Unable to get `microsecond` value")
                 .extract($py)
                 .expect("Unable to convert `microsecond` to u32");
-            assert_eq!(py_microsecond, rs_dt.nanosecond() / 1000, "Mismatched microsecond for '{}'", $s);
+            assert_eq!(
+                py_microsecond,
+                rs_dt.nanosecond() / 1000,
+                "Mismatched microsecond for '{}'",
+                $s
+            );
         }
+    };
+
+    (
+        $py:ident,
+        $parser:ident,
+        $datetime:ident,
+        $s:expr
+    ) => {
+        let info = ParserInfo::default();
+        let default_rsdate = &NaiveDate::from_ymd(2003, 9, 25).and_hms(0, 0, 0);
+
+        test_parse!(
+            $py,
+            $parser,
+            $datetime,
+            info,
+            $s,
+            None,
+            None,
+            false,
+            false,
+            Some(default_rsdate),
+            false,
+            vec![]
+        );
+    };
+}
+
+macro_rules! test_parse_yearfirst {
+    ($py:ident, $parser:ident, $datetime:ident, $s:expr) => {
+        let info = ParserInfo::default();
+        let default_rsdate = &NaiveDate::from_ymd(2003, 9, 25).and_hms(0, 0, 0);
+
+        test_parse!(
+            $py,
+            $parser,
+            $datetime,
+            info,
+            $s,
+            None,
+            Some(true),
+            false,
+            false,
+            Some(default_rsdate),
+            false,
+            vec![]
+        );
+    };
+}
+
+macro_rules! test_parse_dayfirst {
+    ($py:ident, $parser:ident, $datetime:ident,$s:expr) => {
+        let info = ParserInfo::default();
+        let default_rsdate = &NaiveDate::from_ymd(2003, 9, 25).and_hms(0, 0, 0);
+
+        test_parse!(
+            $py,
+            $parser,
+            $datetime,
+            info,
+            $s,
+            Some(true),
+            None,
+            false,
+            false,
+            Some(default_rsdate),
+            false,
+            vec![]
+        );
     };
 }
 
@@ -204,56 +309,56 @@ fn test_dateutil_compat() {
     test_parse!(py, parser, datetime, "09-25-2003");
     // testDateWithDash7
     test_parse!(py, parser, datetime, "25-09-2003");
-    // testDateWithDash8 - Needs `dayfirst` support
-    // test_parse!(py, parser, datetime, "10-09-2003");
+    // testDateWithDash8
+    test_parse_dayfirst!(py, parser, datetime, "10-09-2003");
     // testDateWithDash9
     test_parse!(py, parser, datetime, "10-09-2003");
     // testDateWithDash10
     test_parse!(py, parser, datetime, "10-09-03");
-    // testDateWithDash11 - Needs `yearfirst` support
-    // test_parse!(py, parser, datetime, "10-09-03")
+    // testDateWithDash11
+    test_parse_yearfirst!(py, parser, datetime, "10-09-03");
     // testDateWithDot1
     test_parse!(py, parser, datetime, "2003.09.25");
     // testDateWithDot6
     test_parse!(py, parser, datetime, "09.25.2003");
     // testDateWithDot7
     test_parse!(py, parser, datetime, "25.09.2003");
-    // testDateWithDot8 - Needs `dayfirst` support
-    // test_parse!(py, parser, datetime, "10.09.2003");
+    // testDateWithDot8
+    test_parse_dayfirst!(py, parser, datetime, "10.09.2003");
     // testDateWithDot9
     test_parse!(py, parser, datetime, "10.09.2003");
     // testDateWithDot10
     test_parse!(py, parser, datetime, "10.09.03");
-    // testDateWithDot11 - Needs `yearfirst` support
-    // test_parse!(py, parser, datetime, "10.09.03");
+    // testDateWithDot11
+    test_parse_yearfirst!(py, parser, datetime, "10.09.03");
     // testDateWithSlash1
     test_parse!(py, parser, datetime, "2003/09/25");
     // testDateWithSlash6
     test_parse!(py, parser, datetime, "09/25/2003");
     // testDateWithSlash7
     test_parse!(py, parser, datetime, "25/09/2003");
-    // testDateWithSlash8 - Needs `dayfirst` support
-    // test_parse!(py, parser, datetime, "10/09/2003");
+    // testDateWithSlash8
+    test_parse_dayfirst!(py, parser, datetime, "10/09/2003");
     // testDateWithSlash9
     test_parse!(py, parser, datetime, "10/09/2003");
     // testDateWithSlash10
     test_parse!(py, parser, datetime, "10/09/03");
-    // testDateWithSlash11 - Needs `yearfirst` support
-    // test_parse!(py, parser, datetime, "10/09/03");
+    // testDateWithSlash11
+    test_parse_yearfirst!(py, parser, datetime, "10/09/03");
     // testDateWithSpace1
     test_parse!(py, parser, datetime, "2003 09 25");
     // testDateWithSpace6
     test_parse!(py, parser, datetime, "09 25 2003");
     // testDateWithSpace7
     test_parse!(py, parser, datetime, "25 09 2003");
-    // testDateWithSpace8 - Needs `dayfirst` support
-    // test_parse!(py, parser, datetime, "10 09 2003");
+    // testDateWithSpace8
+    test_parse_dayfirst!(py, parser, datetime, "10 09 2003");
     // testDateWithSpace9
     test_parse!(py, parser, datetime, "10 09 2003");
     // testDateWithSpace10
     test_parse!(py, parser, datetime, "10 09 03");
-    // testDateWithSpace11 - Needs `yearfirst` support
-    // test_parse!(py, parser, datetime, "10 09 03");
+    // testDateWithSpace11
+    test_parse_yearfirst!(py, parser, datetime, "10 09 03");
     // testDateWithSpace12
     test_parse!(py, parser, datetime, "25 09 03");
     // testStrangelyOrderedDate1
@@ -273,8 +378,8 @@ fn test_dateutil_compat() {
 
     // TODO: Fix half a minute being 30 seconds
     // testHourWithLettersStrip5
-
     // test_parse!(py, parser, datetime, "10 h 36.5");
+
     // testMinuteWithLettersSpaces1
     test_parse!(py, parser, datetime, "36 m 5");
     // testMinuteWithLettersSpaces2
@@ -335,20 +440,20 @@ fn test_dateutil_compat() {
 
     // testRandomFormat1
     test_parse!(py, parser, datetime, "Wed, July 10, '96");
-    // testRandomFormat2 - Needs `ignoretz`
-    // test_parse!(py, parser, datetime, "1996.07.10 AD at 15:08:56 PDT");
+    // testRandomFormat2 - Needs ignoretz
+    // test_parse_ignoretz!(py, parser, datetime, "1996.07.10 AD at 15:08:56 PDT");
 
     // testRandomFormat3
     test_parse!(py, parser, datetime, "1996.July.10 AD 12:08 PM");
 
-    // testRandomFormat4 - Needs `ignoretz`
-    // test_parse!(py, parser, datetime, "Tuesday, April 12, 1952 AD 3:30:42pm PST");
-    // testRandomFormat5 - Needs `ignoretz`
-    // test_parse!(py, parser, datetime, "November 5, 1994, 8:15:30 am EST");
-    // testRandomFormat6 - Needs `ignoretz`
-    // test_parse!(py, parser, datetime, "1994-11-05T08:15:30-05:00");
-    // testRandomFormat7 - Needs `ignoretz`
-    // test_parse!(py, parser, datetime, "1994-11-05T08:15:30Z");
+    // testRandomFormat4 - Needs ignoretz
+    // test_parse_ignoretz!(py, parser, datetime, "Tuesday, April 12, 1952 AD 3:30:42pm PST");
+    // testRandomFormat5 - Needs ignoretz
+    // test_parse_ignoretz!(py, parser, datetime, "November 5, 1994, 8:15:30 am EST");
+    // testRandomFormat6 - Needs ignoretz
+    // test_parse_ignoretz!(py, parser, datetime, "1994-11-05T08:15:30-05:00");
+    // testRandomFormat7 - Needs ignoretz
+    // test_parse_ignoretz!(py, parser, datetime, "1994-11-05T08:15:30Z");
     // testRandomFormat8
     test_parse!(py, parser, datetime, "July 4, 1976");
     // testRandomFormat9
@@ -365,22 +470,22 @@ fn test_dateutil_compat() {
     test_parse!(py, parser, datetime, "12h 01m02s am");
     // testRandomFormat15; NB: testRandomFormat16 is exactly the same
     test_parse!(py, parser, datetime, "0:01:02 on July 4, 1976");
-    // testRandomFormat17 - Needs `ignoretz`
-    // test_parse!(py, parser, datetime, "1976-07-04T00:01:02Z");
+    // testRandomFormat17 - Needs ignoretz
+    // test_parse_ignoretz!(py, parser, datetime, "1976-07-04T00:01:02Z");
     // testRandomFormat18
     test_parse!(py, parser, datetime, "July 4, 1976 12:01:02 am");
     // testRandomFormat19
     test_parse!(py, parser, datetime, "Mon Jan  2 04:24:27 1995");
-    // testRandomFormat20 - Needs `ignoretz`
-    // test_parse!(py, parser, datetime, "Tue Apr 4 00:22:12 PDT 1995");
+    // testRandomFormat20 - Needs ignoretz
+    // test_parse_ignoretz!(py, parser, datetime, "Tue Apr 4 00:22:12 PDT 1995");
     // testRandomFormat21
     test_parse!(py, parser, datetime, "04.04.95 00:22");
     // testRandomFormat22
     test_parse!(py, parser, datetime, "Jan 1 1999 11:23:34.578");
     // testRandomFormat23
     test_parse!(py, parser, datetime, "950404 122212");
-    // testRandomFormat24 - Needs `ignoretz`
-    // test_parse!(py, parser, datetime, "0:00 PM, PST");
+    // testRandomFormat24 - Needs ignoretz
+    // test_parse_ignoretz!(py, parser, datetime, "0:00 PM, PST");
     // testRandomFormat25
     test_parse!(py, parser, datetime, "12:08 PM");
     // testRandomFormat26

@@ -745,14 +745,22 @@ pub struct ParsingResult {
 }
 
 #[derive(Default)]
-struct Parser {
+pub struct Parser {
     info: ParserInfo,
 }
 
 impl Parser {
+    pub fn new(info: ParserInfo) -> Self {
+        Parser { info }
+    }
+
     pub fn parse(
         &mut self,
         timestr: &str,
+        dayfirst: Option<bool>,
+        yearfirst: Option<bool>,
+        fuzzy: bool,
+        fuzzy_with_tokens: bool,
         default: Option<&NaiveDateTime>,
         ignoretz: bool,
         tzinfos: Vec<String>,
@@ -762,7 +770,8 @@ impl Parser {
         let default_ts = NaiveDateTime::new(default_date, NaiveTime::from_hms(0, 0, 0));
 
         // TODO: What should be done with the tokens?
-        let (res, tokens) = self.parse_with_tokens(timestr, None, None, false, false)?;
+        let (res, tokens) =
+            self.parse_with_tokens(timestr, dayfirst, yearfirst, fuzzy, fuzzy_with_tokens)?;
 
         let naive = self.build_naive(&res, &default_ts);
 
@@ -1273,25 +1282,8 @@ fn ljust(s: &str, chars: usize, replace: char) -> String {
     }
 }
 
-pub fn parse_with_info(
-    timestr: &str,
-    info: ParserInfo,
-    default: Option<&NaiveDateTime>,
-) -> ParseResult<(NaiveDateTime, Option<FixedOffset>, Option<Vec<String>>)> {
-    // TODO: Is `::new()` more stylistic?
-    let mut parser = Parser { info: info };
-    parser.parse(timestr, default, false, vec![])
-}
-
-pub fn parse_with_default(
-    timestr: &str,
-    default: &NaiveDateTime,
-) -> ParseResult<(NaiveDateTime, Option<FixedOffset>)> {
-    let parse_result = parse_with_info(timestr, ParserInfo::default(), Some(default))?;
-    Ok((parse_result.0, parse_result.1))
-}
-
 pub fn parse(timestr: &str) -> ParseResult<(NaiveDateTime, Option<FixedOffset>)> {
-    let parse_result = parse_with_info(timestr, ParserInfo::default(), None)?;
-    Ok((parse_result.0, parse_result.1))
+    let res = Parser::default().parse(timestr, None, None, false, false, None, false, vec![])?;
+
+    Ok((res.0, res.1))
 }
