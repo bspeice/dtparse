@@ -776,8 +776,8 @@ impl Parser {
         let naive = self.build_naive(&res, &default_ts);
 
         if !ignoretz {
-            let offset = self.build_tzaware(&naive, &res, &default_ts);
-            Ok((naive, offset.unwrap(), tokens))
+            let offset = self.build_tzaware(&naive, &res, &default_ts)?;
+            Ok((naive, offset, tokens))
         } else {
             Ok((naive, None, tokens))
         }
@@ -1010,12 +1010,15 @@ impl Parser {
         default: &NaiveDateTime,
     ) -> ParseResult<Option<FixedOffset>> {
         // TODO: Actual timezone support
-        if res.tzname.is_none() && res.tzoffset.is_none() || res.tzname == Some(" ".to_owned())
-            || res.tzname == Some(".".to_owned())
+        if let Some(offset) = res.tzoffset {
+            Ok(Some(FixedOffset::east(offset)))
+        } else if res.tzoffset == None
+            && (res.tzname == Some(" ".to_owned()) || res.tzname == Some(".".to_owned())
+                || res.tzname == Some("-".to_owned()) || res.tzname == None)
         {
             Ok(None)
         } else {
-            println!("Tzname: {:?}, Tzoffset: {:?}", res.tzname, res.tzoffset);
+            println!("{:?}, {:?}", res.tzname, res.tzoffset);
             Err(ParseError::TimezoneUnsupported)
         }
     }
