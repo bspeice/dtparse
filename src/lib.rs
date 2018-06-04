@@ -1018,7 +1018,6 @@ impl Parser {
         {
             Ok(None)
         } else {
-            println!("{:?}, {:?}", res.tzname, res.tzoffset);
             Err(ParseError::TimezoneUnsupported)
         }
     }
