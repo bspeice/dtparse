@@ -3,14 +3,18 @@ extern crate pyo3;
 
 use chrono::Datelike;
 use chrono::NaiveDate;
+use chrono::NaiveDateTime;
 use chrono::Timelike;
 use pyo3::ObjectProtocol;
 use pyo3::PyBool;
 use pyo3::PyDict;
 use pyo3::PyList;
 use pyo3::PyObject;
+use pyo3::PyModule;
 use pyo3::Python;
 use std::collections::HashMap;
+use std::time::Duration;
+use std::thread;
 
 extern crate dtparse;
 
@@ -60,146 +64,143 @@ macro_rules! py_offset_secs {
     });
 }
 
+fn parse_and_assert(
+    py: Python,
+    parser: &PyModule,
+    datetime: &PyModule,
+    info: ParserInfo,
+    s: &str,
+    dayfirst: Option<bool>,
+    yearfirst: Option<bool>,
+    fuzzy: bool,
+    fuzzy_with_tokens: bool,
+    default: Option<&NaiveDateTime>,
+    ignoretz: bool,
+    tzinfos: Vec<String>,
+) {
+
+    let default_pydate = datetime
+        .call_method1("datetime", (2003, 9, 25))
+        .expect("Unable to create default datetime");
+    let default_tzinfos = PyDict::new(py);
+    default_tzinfos.set_item("BRST", -10800).unwrap();
+
+    let mut kwargs = HashMap::new();
+    kwargs.insert("default", default_pydate);
+    kwargs.insert("tzinfos", default_tzinfos.into());
+    kwargs.insert("ignoretz", PyBool::new(py, ignoretz).into());
+
+    let py_true = PyBool::new(py, true);
+    if dayfirst == Some(true) {
+        kwargs.insert("dayfirst", py_true.into());
+    }
+    if yearfirst == Some(true) {
+        kwargs.insert("yearfirst", py_true.into());
+    }
+
+    // pyo3 has issues if we don't sleep here
+    thread::sleep(Duration::from_millis(5));
+    let py_parsed: PyObject = parser
+        .call_method("parse", s, kwargs)
+        .expect("Unable to call method `parse`")
+        .extract()
+        .expect("Unable to extract result of `parse` call");
+
+    let mut parser = Parser::new(info);
+    let rs_parsed = parser.parse(
+        s,
+        dayfirst,
+        yearfirst,
+        fuzzy,
+        fuzzy_with_tokens,
+        default,
+        ignoretz,
+        tzinfos).expect(&format!("Unable to parse date in Rust '{}'", s));
+
+    if let Some(tzoffset) = rs_parsed.1 {
+        // Make sure the offsets are correct, and then normalize the naive date
+        // to match the aware date
+        let offset_secs = py_offset_secs!(py, py_parsed);
+
+        // TODO: Should I be using utc_minus_local instead?
+        assert_eq!(offset_secs, tzoffset.local_minus_utc(), "Mismatched tzoffset for '{}'", s);
+    } else {
+        // First make sure that Python doesn't have any timestamps set
+        let py_tzoffset = py_parsed
+            .getattr(py, "tzinfo")
+            .expect("Unable to get `tzinfo` value");
+        
+        if py_tzoffset != py.None() {
+            let offset_secs = py_offset_secs!(py, py_parsed);
+            assert!(false, "Tzinfo had value {} when dtparse didn't detect timezone for '{}'", offset_secs, s);
+        }
+    }
+
+    // Naive timestamps
+    let rs_dt = rs_parsed.0;
+
+    // TODO: Should years by i32?
+    let py_year: i32 = py_parsed
+        .getattr(py, "year")
+        .expect("Unable to get `year` value")
+        .extract(py)
+        .expect("Unable to convert `year` to i32");
+    assert_eq!(py_year, rs_dt.year(), "Mismatched year for '{}'", s);
+
+    let py_month: u32 = py_parsed
+        .getattr(py, "month")
+        .expect("Unable to get `month` value")
+        .extract(py)
+        .expect("Unable to convert `month` to u32");
+    assert_eq!(py_month, rs_dt.month(), "Mismatched month for '{}'", s);
+
+    let py_day: u32 = py_parsed
+        .getattr(py, "day")
+        .expect("Unable to get `day` value")
+        .extract(py)
+        .expect("Unable to convert `day` to u32");
+    assert_eq!(py_day, rs_dt.day(), "Mismatched day for '{}'", s);
+
+    let py_hour: u32 = py_parsed
+        .getattr(py, "hour")
+        .expect("Unable to get `hour` value")
+        .extract(py)
+        .expect("Unable to convert `hour` to u32");
+    assert_eq!(py_hour, rs_dt.hour(), "Mismatched hour for '{}'", s);
+
+    let py_minute: u32 = py_parsed
+        .getattr(py, "minute")
+        .expect("Unable to get `minute` value")
+        .extract(py)
+        .expect("Unable to convert `minute` to u32");
+    assert_eq!(py_minute, rs_dt.minute(), "Mismatched minute for '{}'", s);
+
+    let py_second: u32 = py_parsed
+        .getattr(py, "second")
+        .expect("Unable to get `second` value")
+        .extract(py)
+        .expect("Unable to convert `second` to u32");
+    assert_eq!(py_second, rs_dt.second(), "Mismatched second for '{}'", s);
+
+    let py_microsecond: u32 = py_parsed
+        .getattr(py, "microsecond")
+        .expect("Unable to get `microsecond` value")
+        .extract(py)
+        .expect("Unable to convert `microsecond` to u32");
+    assert_eq!(
+        py_microsecond,
+        rs_dt.nanosecond() / 1000,
+        "Mismatched microsecond for '{}'",
+        s
+    );
+}
+
 macro_rules! test_parse {
-    // Full parsing options
-    (
-        $py:ident,
-        $parser:ident,
-        $datetime:ident,
-        $info:expr,
-        $s:expr,
-        $dayfirst:expr,
-        $yearfirst:expr,
-        $fuzzy:expr,
-        $fuzzy_with_tokens:expr,
-        $default:expr,
-        $ignoretz:expr,
-        $tzinfos:expr
-    ) => {
-        let default_pydate = $datetime
-            .call_method1("datetime", (2003, 9, 25))
-            .expect("Unable to create default datetime");
-        let default_tzinfos = PyDict::new($py);
-        default_tzinfos.set_item("BRST", -10800).unwrap();
-
-        let mut kwargs = HashMap::new();
-        kwargs.insert("default", default_pydate);
-        kwargs.insert("tzinfos", default_tzinfos.into());
-        kwargs.insert("ignoretz", PyBool::new($py, $ignoretz).into());
-
-        let py_true = PyBool::new($py, true);
-        if $dayfirst == Some(true) {
-            kwargs.insert("dayfirst", py_true.into());
-        }
-        if $yearfirst == Some(true) {
-            kwargs.insert("yearfirst", py_true.into());
-        }
-
-        let py_parsed: PyObject = $parser
-            .call_method("parse", $s, kwargs)
-            .expect("Unable to call method `parse`")
-            .extract()
-            .expect("Unable to extract result of `parse` call");
-
-        let mut parser = Parser::new($info);
-        let rs_parsed = parser.parse(
-            $s,
-            $dayfirst,
-            $yearfirst,
-            $fuzzy,
-            $fuzzy_with_tokens,
-            $default,
-            $ignoretz,
-            $tzinfos).expect(&format!("Unable to parse date in Rust '{}'", $s));
-
-        if let Some(tzoffset) = rs_parsed.1 {
-            // Make sure the offsets are correct, and then normalize the naive date
-            // to match the aware date
-            let offset_secs = py_offset_secs!($py, py_parsed);
-
-            // TODO: Should I be using utc_minus_local instead?
-            assert_eq!(offset_secs, tzoffset.local_minus_utc(), "Mismatched tzoffset for '{}'", $s);
-        } else {
-            // First make sure that Python doesn't have any timestamps set
-            let py_tzoffset = py_parsed
-                .getattr($py, "tzinfo")
-                .expect("Unable to get `tzinfo` value");
-            
-            if py_tzoffset != $py.None() {
-                let offset_secs = py_offset_secs!($py, py_parsed);
-                assert!(false, "Tzinfo had value {} when dtparse didn't detect timezone for '{}'", offset_secs, $s);
-            }
-        }
-
-        // Naive timestamps
-        let rs_dt = rs_parsed.0;
-
-        // TODO: Should years by i32?
-        let py_year: i32 = py_parsed
-            .getattr($py, "year")
-            .expect("Unable to get `year` value")
-            .extract($py)
-            .expect("Unable to convert `year` to i32");
-        assert_eq!(py_year, rs_dt.year(), "Mismatched year for '{}'", $s);
-
-        let py_month: u32 = py_parsed
-            .getattr($py, "month")
-            .expect("Unable to get `month` value")
-            .extract($py)
-            .expect("Unable to convert `month` to u32");
-        assert_eq!(py_month, rs_dt.month(), "Mismatched month for '{}'", $s);
-
-        let py_day: u32 = py_parsed
-            .getattr($py, "day")
-            .expect("Unable to get `day` value")
-            .extract($py)
-            .expect("Unable to convert `day` to u32");
-        assert_eq!(py_day, rs_dt.day(), "Mismatched day for '{}'", $s);
-
-        let py_hour: u32 = py_parsed
-            .getattr($py, "hour")
-            .expect("Unable to get `hour` value")
-            .extract($py)
-            .expect("Unable to convert `hour` to u32");
-        assert_eq!(py_hour, rs_dt.hour(), "Mismatched hour for '{}'", $s);
-
-        let py_minute: u32 = py_parsed
-            .getattr($py, "minute")
-            .expect("Unable to get `minute` value")
-            .extract($py)
-            .expect("Unable to convert `minute` to u32");
-        assert_eq!(py_minute, rs_dt.minute(), "Mismatched minute for '{}'", $s);
-
-        let py_second: u32 = py_parsed
-            .getattr($py, "second")
-            .expect("Unable to get `second` value")
-            .extract($py)
-            .expect("Unable to convert `second` to u32");
-        assert_eq!(py_second, rs_dt.second(), "Mismatched second for '{}'", $s);
-
-        let py_microsecond: u32 = py_parsed
-            .getattr($py, "microsecond")
-            .expect("Unable to get `microsecond` value")
-            .extract($py)
-            .expect("Unable to convert `microsecond` to u32");
-        assert_eq!(
-            py_microsecond,
-            rs_dt.nanosecond() / 1000,
-            "Mismatched microsecond for '{}'",
-            $s
-        );
-    };
-
-    (
-        $py:ident,
-        $parser:ident,
-        $datetime:ident,
-        $s:expr
-    ) => {
+    ($py:ident, $parser:ident, $datetime:ident, $s:expr) => {
         let info = ParserInfo::default();
         let default_rsdate = &NaiveDate::from_ymd(2003, 9, 25).and_hms(0, 0, 0);
 
-        test_parse!(
+        parse_and_assert(
             $py,
             $parser,
             $datetime,
@@ -221,7 +222,7 @@ macro_rules! test_parse_yearfirst {
         let info = ParserInfo::default();
         let default_rsdate = &NaiveDate::from_ymd(2003, 9, 25).and_hms(0, 0, 0);
 
-        test_parse!(
+        parse_and_assert(
             $py,
             $parser,
             $datetime,
@@ -243,7 +244,7 @@ macro_rules! test_parse_dayfirst {
         let info = ParserInfo::default();
         let default_rsdate = &NaiveDate::from_ymd(2003, 9, 25).and_hms(0, 0, 0);
 
-        test_parse!(
+        parse_and_assert(
             $py,
             $parser,
             $datetime,
@@ -265,7 +266,7 @@ macro_rules! test_parse_ignoretz {
         let info = ParserInfo::default();
         let default_rsdate = &NaiveDate::from_ymd(2003, 9, 25).and_hms(0, 0, 0);
 
-        test_parse!(
+        parse_and_assert(
             $py,
             $parser,
             $datetime,
