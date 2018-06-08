@@ -302,9 +302,9 @@ fn test_dateutil_compat() {
     // TODO: Uncomment tests once timezone support is in
 
     // testDateCommandFormat
-    // test_parse!(py, parser, datetime, "Thu Sep 25 10:36:28 BRST 2003");
+    test_parse!(py, parser, datetime, "Thu Sep 25 10:36:28 BRST 2003");
     // testDateCommandFormatReversed
-    // test_parse!(py, parser, datetime, "2003 10:36:28 BRST 25 Sep Thu");
+    test_parse!(py, parser, datetime, "2003 10:36:28 BRST 25 Sep Thu");
 
     // testDateCommandFormatStrip1
     test_parse!(py, parser, datetime, "Thu Sep 25 10:36:28 2003");
@@ -330,10 +330,9 @@ fn test_dateutil_compat() {
     test_parse!(py, parser, datetime, "2003");
     // testDateRCommandFormat
     test_parse!(py, parser, datetime, "Thu, 25 Sep 2003 10:49:41 -0300");
-    // testISOFormat
+    // testISOFormat - Needs some debug work on the python side
     // test_parse!(py, parser, datetime, "2003-09-25T10:49:41.5-03:00");
-    // TODO: tzoffset not properly recognized
-    // testISOFormatStrip1
+    // testISOFormatStrip1 - Needs same as above
     // test_parse!(py, parser, datetime, "2003-09-25T10:49:41-03:00");
     // testISOFormatStrip2
     test_parse!(py, parser, datetime, "2003-09-25T10:49:41");
@@ -499,22 +498,19 @@ fn test_dateutil_compat() {
 
     // testRandomFormat1
     test_parse!(py, parser, datetime, "Wed, July 10, '96");
-    // TODO: TZ support (PDT is unrecognized)
     // testRandomFormat2
-    // test_parse_ignoretz!(py, parser, datetime, "1996.07.10 AD at 15:08:56 PDT");
+    test_parse_ignoretz!(py, parser, datetime, "1996.07.10 AD at 15:08:56 PDT");
 
     // testRandomFormat3
     test_parse!(py, parser, datetime, "1996.July.10 AD 12:08 PM");
 
-    // TODO: UnrecognizedToken("PST")
     // testRandomFormat4
-    // test_parse_ignoretz!(py, parser, datetime, "Tuesday, April 12, 1952 AD 3:30:42pm PST");
-    // TODO: UnrecognizedToken("EST")
+    test_parse_ignoretz!(py, parser, datetime, "Tuesday, April 12, 1952 AD 3:30:42pm PST");
     // testRandomFormat5
-    // test_parse_ignoretz!(py, parser, datetime, "November 5, 1994, 8:15:30 am EST");
+    test_parse_ignoretz!(py, parser, datetime, "November 5, 1994, 8:15:30 am EST");
     // TODO: Parse error - finds hour 5 instead of 8
     // testRandomFormat6
-    // test_parse_ignoretz!(py, parser, datetime, "1994-11-05T08:15:30-05:00");
+    test_parse_ignoretz!(py, parser, datetime, "1994-11-05T08:15:30-05:00");
     // testRandomFormat7
     test_parse_ignoretz!(py, parser, datetime, "1994-11-05T08:15:30Z");
     // testRandomFormat8
@@ -533,22 +529,22 @@ fn test_dateutil_compat() {
     test_parse!(py, parser, datetime, "12h 01m02s am");
     // testRandomFormat15; NB: testRandomFormat16 is exactly the same
     test_parse!(py, parser, datetime, "0:01:02 on July 4, 1976");
-    // testRandomFormat17 - Needs ignoretz
+    // testRandomFormat17
     test_parse_ignoretz!(py, parser, datetime, "1976-07-04T00:01:02Z");
     // testRandomFormat18
     test_parse!(py, parser, datetime, "July 4, 1976 12:01:02 am");
     // testRandomFormat19
     test_parse!(py, parser, datetime, "Mon Jan  2 04:24:27 1995");
-    // testRandomFormat20 - Needs ignoretz
-    // test_parse_ignoretz!(py, parser, datetime, "Tue Apr 4 00:22:12 PDT 1995");
+    // testRandomFormat20
+    test_parse_ignoretz!(py, parser, datetime, "Tue Apr 4 00:22:12 PDT 1995");
     // testRandomFormat21
     test_parse!(py, parser, datetime, "04.04.95 00:22");
     // testRandomFormat22
     test_parse!(py, parser, datetime, "Jan 1 1999 11:23:34.578");
     // testRandomFormat23
     test_parse!(py, parser, datetime, "950404 122212");
-    // testRandomFormat24 - Needs ignoretz
-    // test_parse_ignoretz!(py, parser, datetime, "0:00 PM, PST");
+    // testRandomFormat24
+    test_parse_ignoretz!(py, parser, datetime, "0:00 PM, PST");
     // testRandomFormat25
     test_parse!(py, parser, datetime, "12:08 PM");
     // testRandomFormat26

@@ -776,7 +776,7 @@ impl Parser {
         let naive = self.build_naive(&res, &default_ts);
 
         if !ignoretz {
-            let offset = self.build_tzaware(&naive, &res, &default_ts)?;
+            let offset = self.build_tzaware(&naive, &res, tzinfos)?;
             Ok((naive, offset, tokens))
         } else {
             Ok((naive, None, tokens))
@@ -955,7 +955,7 @@ impl Parser {
         tzoffset: Option<i32>,
         token: &str,
     ) -> bool {
-        let all_ascii_upper = token == token.to_ascii_uppercase();
+        let all_ascii_upper = token.chars().all(|c| 65u8 as char <= c && c <= 90u8 as char);
         return hour.is_some() && tzname.is_none() && tzoffset.is_none() && token.len() <= 5
             && all_ascii_upper;
     }
@@ -1007,7 +1007,7 @@ impl Parser {
         &self,
         dt: &NaiveDateTime,
         res: &ParsingResult,
-        default: &NaiveDateTime,
+        tzinfos: HashMap<String, i32>,
     ) -> ParseResult<Option<FixedOffset>> {
         // TODO: Actual timezone support
         if let Some(offset) = res.tzoffset {
@@ -1016,6 +1016,12 @@ impl Parser {
             && (res.tzname == Some(" ".to_owned()) || res.tzname == Some(".".to_owned())
                 || res.tzname == Some("-".to_owned()) || res.tzname == None)
         {
+            Ok(None)
+        } else if res.tzname.is_some() && tzinfos.contains_key(res.tzname.as_ref().unwrap()) {
+            Ok(Some(FixedOffset::east(tzinfos.get(res.tzname.as_ref().unwrap()).unwrap().clone())))
+        } else if res.tzname.is_some() {
+            // TODO: Dateutil issues a warning/deprecation notice here. Should we force the issue?
+            println!("tzname {} identified but not understood. Ignoring for the time being, but behavior is subject to change.", res.tzname.as_ref().unwrap());
             Ok(None)
         } else {
             Err(ParseError::TimezoneUnsupported)
