@@ -64,6 +64,15 @@ macro_rules! py_offset_secs {
     });
 }
 
+macro_rules! rs_tzinfo_map {
+    () => ({
+        let mut h = HashMap::new();
+        h.insert("BRST".to_owned(), -10800);
+
+        h
+    })
+}
+
 fn parse_and_assert(
     py: Python,
     parser: &PyModule,
@@ -212,7 +221,7 @@ macro_rules! test_parse {
             false,
             Some(default_rsdate),
             false,
-            HashMap::new()
+            rs_tzinfo_map!()
         );
     };
 }
@@ -234,7 +243,7 @@ macro_rules! test_parse_yearfirst {
             false,
             Some(default_rsdate),
             false,
-            HashMap::new()
+            rs_tzinfo_map!()
         );
     };
 }
@@ -256,7 +265,7 @@ macro_rules! test_parse_dayfirst {
             false,
             Some(default_rsdate),
             false,
-            HashMap::new()
+            rs_tzinfo_map!()
         );
     };
 }
@@ -278,7 +287,7 @@ macro_rules! test_parse_ignoretz {
             false,
             Some(default_rsdate),
             true,
-            HashMap::new()
+            rs_tzinfo_map!()
         );
     };
 }
