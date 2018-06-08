@@ -763,7 +763,7 @@ impl Parser {
         fuzzy_with_tokens: bool,
         default: Option<&NaiveDateTime>,
         ignoretz: bool,
-        tzinfos: Vec<String>,
+        tzinfos: HashMap<String, i32>,
     ) -> Result<(NaiveDateTime, Option<FixedOffset>, Option<Vec<String>>), ParseError> {
         let default_date = default.unwrap_or(&Local::now().naive_local()).date();
 
@@ -1285,7 +1285,7 @@ fn ljust(s: &str, chars: usize, replace: char) -> String {
 }
 
 pub fn parse(timestr: &str) -> ParseResult<(NaiveDateTime, Option<FixedOffset>)> {
-    let res = Parser::default().parse(timestr, None, None, false, false, None, false, vec![])?;
+    let res = Parser::default().parse(timestr, None, None, false, false, None, false, HashMap::new())?;
 
     Ok((res.0, res.1))
 }

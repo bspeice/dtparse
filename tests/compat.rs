@@ -76,7 +76,7 @@ fn parse_and_assert(
     fuzzy_with_tokens: bool,
     default: Option<&NaiveDateTime>,
     ignoretz: bool,
-    tzinfos: Vec<String>,
+    tzinfos: HashMap<String, i32>,
 ) {
 
     let default_pydate = datetime
@@ -212,7 +212,7 @@ macro_rules! test_parse {
             false,
             Some(default_rsdate),
             false,
-            vec![]
+            HashMap::new()
         );
     };
 }
@@ -234,7 +234,7 @@ macro_rules! test_parse_yearfirst {
             false,
             Some(default_rsdate),
             false,
-            vec![]
+            HashMap::new()
         );
     };
 }
@@ -256,7 +256,7 @@ macro_rules! test_parse_dayfirst {
             false,
             Some(default_rsdate),
             false,
-            vec![]
+            HashMap::new()
         );
     };
 }
@@ -278,7 +278,7 @@ macro_rules! test_parse_ignoretz {
             false,
             Some(default_rsdate),
             true,
-            vec![]
+            HashMap::new()
         );
     };
 }
