@@ -1269,8 +1269,9 @@ impl Parser {
         let minute = value.floor().to_i64().unwrap() as i32;
         let mut second = None;
 
-        let sec_remainder = value % *ONE;
+        let sec_remainder = value - value.floor();
         if sec_remainder != *ZERO {
+            println!("{}", *SIXTY * sec_remainder);
             second = Some((*SIXTY * sec_remainder).floor().to_i64().unwrap() as i32);
         }
 

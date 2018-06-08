@@ -299,8 +299,6 @@ fn test_dateutil_compat() {
     let parser = py.import("dateutil.parser").unwrap();
     let datetime = py.import("datetime").unwrap();
 
-    // TODO: Uncomment tests once timezone support is in
-
     // testDateCommandFormat
     test_parse!(py, parser, datetime, "Thu Sep 25 10:36:28 BRST 2003");
     // testDateCommandFormatReversed
@@ -331,9 +329,9 @@ fn test_dateutil_compat() {
     // testDateRCommandFormat
     test_parse!(py, parser, datetime, "Thu, 25 Sep 2003 10:49:41 -0300");
     // testISOFormat - Needs some debug work on the python side
-    // test_parse!(py, parser, datetime, "2003-09-25T10:49:41.5-03:00");
+    test_parse!(py, parser, datetime, "2003-09-25T10:49:41.5-03:00");
     // testISOFormatStrip1 - Needs same as above
-    // test_parse!(py, parser, datetime, "2003-09-25T10:49:41-03:00");
+    test_parse!(py, parser, datetime, "2003-09-25T10:49:41-03:00");
     // testISOFormatStrip2
     test_parse!(py, parser, datetime, "2003-09-25T10:49:41");
     // testISOFormatStrip3
@@ -343,10 +341,9 @@ fn test_dateutil_compat() {
     // testISOFormatStrip5
     test_parse!(py, parser, datetime, "2003-09-25");
     // testISOStrippedFormat
-    // test_parse!(py, parser, datetime, "20030925T104941.5-0300");
-    // TODO: More than three YMD values
+    test_parse!(py, parser, datetime, "20030925T104941.5-0300");
     // testISOStrippedFormatStrip1
-    // test_parse!(py, parser, datetime, "20030925T104941-0300");
+    test_parse!(py, parser, datetime, "20030925T104941-0300");
     // testISOStrippedFormatStrip2
     test_parse!(py, parser, datetime, "20030925T104941");
     // testISOStrippedFormatStrip3
@@ -434,9 +431,8 @@ fn test_dateutil_compat() {
     // testHourWithLettersStrip4
     test_parse!(py, parser, datetime, "10 h 36");
 
-    // TODO: Fix half a minute being 30 seconds
     // testHourWithLettersStrip5
-    // test_parse!(py, parser, datetime, "10 h 36.5");
+    test_parse!(py, parser, datetime, "10 h 36.5");
 
     // testMinuteWithLettersSpaces1
     test_parse!(py, parser, datetime, "36 m 5");
@@ -508,7 +504,6 @@ fn test_dateutil_compat() {
     test_parse_ignoretz!(py, parser, datetime, "Tuesday, April 12, 1952 AD 3:30:42pm PST");
     // testRandomFormat5
     test_parse_ignoretz!(py, parser, datetime, "November 5, 1994, 8:15:30 am EST");
-    // TODO: Parse error - finds hour 5 instead of 8
     // testRandomFormat6
     test_parse_ignoretz!(py, parser, datetime, "1994-11-05T08:15:30-05:00");
     // testRandomFormat7
