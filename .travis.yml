@@ -16,7 +16,7 @@ matrix:
           rust: nightly
 
 before_install:
-    - set -eu
+    - set -e
     - pip install dateutil
     - rustup self update
 
