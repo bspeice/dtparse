@@ -17,6 +17,6 @@ matrix:
 
 before_install:
     - set -e
-    - pip install dateutil
+    - pip install python-dateutil
     - rustup self update
 
