@@ -1,5 +1,4 @@
 language: rust
-sudo: required
 
 env:
     global:
@@ -18,6 +17,6 @@ matrix:
 
 before_install:
     - set -e
-    - pip install python-dateutil
+    - pip install --user python-dateutil
     - rustup self update
 
