@@ -1,24 +1,5 @@
 language: rust
-python:
-  - '3.5'
-
-env:
-    global:
-        - CRATE_NAME=dtparse
-
-matrix:
-    include:
-        # Tests will only run on nightly, and where I can install Python/Dateutil
-        # Should still build on stable though
-        - env: TARGET=aarch64-unknown-linux-gnu
-          rust: nightly
-        - env: TARGET=x86_64-unknown-linux-gnu
-          rust: nightly
-        - env: TARGET=x86_64-unknown-linux-musl
-          rust: nightly
-
-before_install:
-    - set -e
-    - pip install --user python-dateutil
-    - rustup self update
-
+rust:
+  - stable
+  - beta
+  - nightly

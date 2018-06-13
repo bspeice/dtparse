@@ -955,7 +955,9 @@ impl Parser {
         tzoffset: Option<i32>,
         token: &str,
     ) -> bool {
-        let all_ascii_upper = token.chars().all(|c| 65u8 as char <= c && c <= 90u8 as char);
+        let all_ascii_upper = token
+            .chars()
+            .all(|c| 65u8 as char <= c && c <= 90u8 as char);
         return hour.is_some() && tzname.is_none() && tzoffset.is_none() && token.len() <= 5
             && all_ascii_upper;
     }
@@ -1018,7 +1020,9 @@ impl Parser {
         {
             Ok(None)
         } else if res.tzname.is_some() && tzinfos.contains_key(res.tzname.as_ref().unwrap()) {
-            Ok(Some(FixedOffset::east(tzinfos.get(res.tzname.as_ref().unwrap()).unwrap().clone())))
+            Ok(Some(FixedOffset::east(
+                tzinfos.get(res.tzname.as_ref().unwrap()).unwrap().clone(),
+            )))
         } else if res.tzname.is_some() {
             // TODO: Dateutil issues a warning/deprecation notice here. Should we force the issue?
             println!("tzname {} identified but not understood. Ignoring for the time being, but behavior is subject to change.", res.tzname.as_ref().unwrap());
@@ -1292,7 +1296,16 @@ fn ljust(s: &str, chars: usize, replace: char) -> String {
 }
 
 pub fn parse(timestr: &str) -> ParseResult<(NaiveDateTime, Option<FixedOffset>)> {
-    let res = Parser::default().parse(timestr, None, None, false, false, None, false, HashMap::new())?;
+    let res = Parser::default().parse(
+        timestr,
+        None,
+        None,
+        false,
+        false,
+        None,
+        false,
+        HashMap::new(),
+    )?;
 
     Ok((res.0, res.1))
 }
