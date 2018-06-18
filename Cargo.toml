@@ -16,6 +16,6 @@ name = "dtparse"
 
 [dependencies]
 chrono = "0.4"
-lazy_static = "*"
+lazy_static = "1.0"
 num-traits = "0.2"
 rust_decimal = "0.8"
