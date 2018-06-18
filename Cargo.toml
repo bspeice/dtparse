@@ -2,6 +2,17 @@
 name = "dtparse"
 version = "0.7.0"
 authors = ["Bradlee Speice <bradlee@speice.io>"]
+description = "A dateutil-compatible timestamp parser for Rust"
+repository = "https://github.com/bspeice/dtparser.git"
+readme = "README.md"
+categories = ["date-and-time"]
+license = "Apache-2.0"
+
+[badges]
+travis-ci = { repository = "bspeice/dtparse" }
+
+[lib]
+name = "dtparse"
 
 [dependencies]
 chrono = "0.4"
