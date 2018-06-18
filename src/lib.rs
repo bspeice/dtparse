@@ -60,6 +60,7 @@ impl From<ParseIntError> for ParseInternalError {
 
 #[derive(Debug)]
 pub enum ParseError {
+    AmbiguousWeekday,
     InternalError(ParseInternalError),
     InvalidMonth,
     UnrecognizedToken(String),
@@ -791,7 +792,7 @@ impl Parser {
         default: Option<&NaiveDateTime>,
         ignoretz: bool,
         tzinfos: HashMap<String, i32>,
-    ) -> Result<(NaiveDateTime, Option<FixedOffset>, Option<Vec<String>>), ParseError> {
+    ) -> ParseResult<(NaiveDateTime, Option<FixedOffset>, Option<Vec<String>>)> {
         let default_date = default.unwrap_or(&Local::now().naive_local()).date();
 
         let default_ts = NaiveDateTime::new(default_date, NaiveTime::from_hms(0, 0, 0));
@@ -800,7 +801,7 @@ impl Parser {
         let (res, tokens) =
             self.parse_with_tokens(timestr, dayfirst, yearfirst, fuzzy, fuzzy_with_tokens)?;
 
-        let naive = self.build_naive(&res, &default_ts);
+        let naive = self.build_naive(&res, &default_ts)?;
 
         if !ignoretz {
             let offset = self.build_tzaware(&naive, &res, tzinfos)?;
@@ -1011,8 +1012,11 @@ impl Parser {
         }
     }
 
-    fn build_naive(&self, res: &ParsingResult, default: &NaiveDateTime) -> NaiveDateTime {
-        // TODO: Handle weekday here
+    fn build_naive(&self, res: &ParsingResult, default: &NaiveDateTime) -> ParseResult<NaiveDateTime> {
+        // TODO: Handle weekday here - dateutils uses relativedelta to accomplish this
+        if res.weekday.is_some() && res.day.is_none() {
+            return Err(ParseError::AmbiguousWeekday);
+        }
 
         let y = res.year.unwrap_or(default.year());
         let m = res.month.unwrap_or(default.month() as i32) as u32;
@@ -1032,7 +1036,7 @@ impl Parser {
                 .unwrap_or(default.timestamp_subsec_micros() as i32) as u32,
         );
 
-        NaiveDateTime::new(d, t)
+        Ok(NaiveDateTime::new(d, t))
     }
 
     fn build_tzaware(

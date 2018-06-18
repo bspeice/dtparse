@@ -3,12 +3,12 @@ from datetime import datetime
 
 tests = {
     'test_parse_default': [
-        "Thu Sep 25 10:36:28", "Thu Sep 10:36:28", "Thu 10:36:28",
+        "Thu Sep 25 10:36:28",
         "Sep 10:36:28", "10:36:28", "10:36", "Sep 2003", "Sep", "2003",
         "10h36m28.5s", "10h36m28s", "10h36m", "10h", "10 h 36", "10 h 36.5",
         "36 m 5", "36 m 5 s", "36 m 05", "36 m 05 s", "10h am", "10h pm",
         "10am", "10pm", "10:00 am", "10:00 pm", "10:00am", "10:00pm",
-        "10:00a.m", "10:00p.m", "10:00a.m.", "10:00p.m.", "Wed", "Wednesday",
+        "10:00a.m", "10:00p.m", "10:00a.m.", "10:00p.m.",
         "October", "31-Dec-00", "0:01:02", "12h 01m02s am", "12:08 PM",
         "01h02m03", "01h02", "01h02s", "01m02", "01m02h", "2004 10 Apr 11h30m",
         # testPertain
@@ -77,7 +77,10 @@ tests = {
         'November 5, 1994, 8:15:30 am EST', '1994-11-05T08:15:30-05:00',
         '1994-11-05T08:15:30Z', '1976-07-04T00:01:02Z',
         'Tue Apr 4 00:22:12 PDT 1995'
-    ]
+    ],
+    'test_parse_default_ignore': [
+        "Thu Sep 10:36:28", "Thu 10:36:28", "Wed", "Wednesday"
+    ],
 }
 
 def main():
@@ -137,6 +140,13 @@ def test_unspecified_fallback(i, s):
 def test_parse_ignoretz(i, s):
     d = parse(s, ignoretz=True)
     return TEST_PARSE_IGNORETZ.format(i=i, d=d, s=s)
+
+
+def test_parse_default_ignore(i, s):
+    default = datetime(2003, 9, 25)
+    d = parse(s, default=default)
+
+    return TEST_PARSE_DEFAULT_IGNORE.format(i=i, d=d, s=s)
 
 # Here lies all the ugly junk.
 TEST_HEADER = '''
@@ -336,6 +346,21 @@ fn test_parse_ignoretz{i}() {{
     }};
     parse_and_assert(pdt, info, "{s}", None, None, false, false,
                      None, true, HashMap::new());
+}}\n'''
+
+TEST_PARSE_DEFAULT_IGNORE = '''
+#[test]
+#[ignore]
+fn test_parse_default_ignore{i}() {{
+    let info = ParserInfo::default();
+    let default_rsdate = &NaiveDate::from_ymd(2003, 9, 25).and_hms(0, 0, 0);
+    let pdt = PyDateTime {{
+        year: {d.year}, month: {d.month}, day: {d.day},
+        hour: {d.hour}, minute: {d.minute}, second: {d.second},
+        micros: {d.microsecond}, tzo: None
+    }};
+    parse_and_assert(pdt, info, "{s}", None, None, false, false,
+                     Some(default_rsdate), false, HashMap::new());
 }}\n'''
 
 

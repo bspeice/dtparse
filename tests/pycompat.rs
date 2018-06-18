@@ -102,7 +102,7 @@ fn test_parse_default1() {
         hour: 10, minute: 36, second: 28,
         micros: 0, tzo: None
     };
-    parse_and_assert(pdt, info, "Thu Sep 10:36:28", None, None, false, false,
+    parse_and_assert(pdt, info, "Sep 10:36:28", None, None, false, false,
                      Some(default_rsdate), false, HashMap::new());
 }
 
@@ -115,38 +115,12 @@ fn test_parse_default2() {
         hour: 10, minute: 36, second: 28,
         micros: 0, tzo: None
     };
-    parse_and_assert(pdt, info, "Thu 10:36:28", None, None, false, false,
-                     Some(default_rsdate), false, HashMap::new());
-}
-
-#[test]
-fn test_parse_default3() {
-    let info = ParserInfo::default();
-    let default_rsdate = &NaiveDate::from_ymd(2003, 9, 25).and_hms(0, 0, 0);
-    let pdt = PyDateTime {
-        year: 2003, month: 9, day: 25,
-        hour: 10, minute: 36, second: 28,
-        micros: 0, tzo: None
-    };
-    parse_and_assert(pdt, info, "Sep 10:36:28", None, None, false, false,
-                     Some(default_rsdate), false, HashMap::new());
-}
-
-#[test]
-fn test_parse_default4() {
-    let info = ParserInfo::default();
-    let default_rsdate = &NaiveDate::from_ymd(2003, 9, 25).and_hms(0, 0, 0);
-    let pdt = PyDateTime {
-        year: 2003, month: 9, day: 25,
-        hour: 10, minute: 36, second: 28,
-        micros: 0, tzo: None
-    };
     parse_and_assert(pdt, info, "10:36:28", None, None, false, false,
                      Some(default_rsdate), false, HashMap::new());
 }
 
 #[test]
-fn test_parse_default5() {
+fn test_parse_default3() {
     let info = ParserInfo::default();
     let default_rsdate = &NaiveDate::from_ymd(2003, 9, 25).and_hms(0, 0, 0);
     let pdt = PyDateTime {
@@ -159,7 +133,7 @@ fn test_parse_default5() {
 }
 
 #[test]
-fn test_parse_default6() {
+fn test_parse_default4() {
     let info = ParserInfo::default();
     let default_rsdate = &NaiveDate::from_ymd(2003, 9, 25).and_hms(0, 0, 0);
     let pdt = PyDateTime {
@@ -172,7 +146,7 @@ fn test_parse_default6() {
 }
 
 #[test]
-fn test_parse_default7() {
+fn test_parse_default5() {
     let info = ParserInfo::default();
     let default_rsdate = &NaiveDate::from_ymd(2003, 9, 25).and_hms(0, 0, 0);
     let pdt = PyDateTime {
@@ -185,7 +159,7 @@ fn test_parse_default7() {
 }
 
 #[test]
-fn test_parse_default8() {
+fn test_parse_default6() {
     let info = ParserInfo::default();
     let default_rsdate = &NaiveDate::from_ymd(2003, 9, 25).and_hms(0, 0, 0);
     let pdt = PyDateTime {
@@ -198,7 +172,7 @@ fn test_parse_default8() {
 }
 
 #[test]
-fn test_parse_default9() {
+fn test_parse_default7() {
     let info = ParserInfo::default();
     let default_rsdate = &NaiveDate::from_ymd(2003, 9, 25).and_hms(0, 0, 0);
     let pdt = PyDateTime {
@@ -211,7 +185,7 @@ fn test_parse_default9() {
 }
 
 #[test]
-fn test_parse_default10() {
+fn test_parse_default8() {
     let info = ParserInfo::default();
     let default_rsdate = &NaiveDate::from_ymd(2003, 9, 25).and_hms(0, 0, 0);
     let pdt = PyDateTime {
@@ -224,7 +198,7 @@ fn test_parse_default10() {
 }
 
 #[test]
-fn test_parse_default11() {
+fn test_parse_default9() {
     let info = ParserInfo::default();
     let default_rsdate = &NaiveDate::from_ymd(2003, 9, 25).and_hms(0, 0, 0);
     let pdt = PyDateTime {
@@ -237,7 +211,7 @@ fn test_parse_default11() {
 }
 
 #[test]
-fn test_parse_default12() {
+fn test_parse_default10() {
     let info = ParserInfo::default();
     let default_rsdate = &NaiveDate::from_ymd(2003, 9, 25).and_hms(0, 0, 0);
     let pdt = PyDateTime {
@@ -250,7 +224,7 @@ fn test_parse_default12() {
 }
 
 #[test]
-fn test_parse_default13() {
+fn test_parse_default11() {
     let info = ParserInfo::default();
     let default_rsdate = &NaiveDate::from_ymd(2003, 9, 25).and_hms(0, 0, 0);
     let pdt = PyDateTime {
@@ -263,7 +237,7 @@ fn test_parse_default13() {
 }
 
 #[test]
-fn test_parse_default14() {
+fn test_parse_default12() {
     let info = ParserInfo::default();
     let default_rsdate = &NaiveDate::from_ymd(2003, 9, 25).and_hms(0, 0, 0);
     let pdt = PyDateTime {
@@ -276,7 +250,7 @@ fn test_parse_default14() {
 }
 
 #[test]
-fn test_parse_default15() {
+fn test_parse_default13() {
     let info = ParserInfo::default();
     let default_rsdate = &NaiveDate::from_ymd(2003, 9, 25).and_hms(0, 0, 0);
     let pdt = PyDateTime {
@@ -289,7 +263,7 @@ fn test_parse_default15() {
 }
 
 #[test]
-fn test_parse_default16() {
+fn test_parse_default14() {
     let info = ParserInfo::default();
     let default_rsdate = &NaiveDate::from_ymd(2003, 9, 25).and_hms(0, 0, 0);
     let pdt = PyDateTime {
@@ -302,7 +276,7 @@ fn test_parse_default16() {
 }
 
 #[test]
-fn test_parse_default17() {
+fn test_parse_default15() {
     let info = ParserInfo::default();
     let default_rsdate = &NaiveDate::from_ymd(2003, 9, 25).and_hms(0, 0, 0);
     let pdt = PyDateTime {
@@ -315,7 +289,7 @@ fn test_parse_default17() {
 }
 
 #[test]
-fn test_parse_default18() {
+fn test_parse_default16() {
     let info = ParserInfo::default();
     let default_rsdate = &NaiveDate::from_ymd(2003, 9, 25).and_hms(0, 0, 0);
     let pdt = PyDateTime {
@@ -328,7 +302,7 @@ fn test_parse_default18() {
 }
 
 #[test]
-fn test_parse_default19() {
+fn test_parse_default17() {
     let info = ParserInfo::default();
     let default_rsdate = &NaiveDate::from_ymd(2003, 9, 25).and_hms(0, 0, 0);
     let pdt = PyDateTime {
@@ -341,7 +315,7 @@ fn test_parse_default19() {
 }
 
 #[test]
-fn test_parse_default20() {
+fn test_parse_default18() {
     let info = ParserInfo::default();
     let default_rsdate = &NaiveDate::from_ymd(2003, 9, 25).and_hms(0, 0, 0);
     let pdt = PyDateTime {
@@ -354,7 +328,7 @@ fn test_parse_default20() {
 }
 
 #[test]
-fn test_parse_default21() {
+fn test_parse_default19() {
     let info = ParserInfo::default();
     let default_rsdate = &NaiveDate::from_ymd(2003, 9, 25).and_hms(0, 0, 0);
     let pdt = PyDateTime {
@@ -367,7 +341,7 @@ fn test_parse_default21() {
 }
 
 #[test]
-fn test_parse_default22() {
+fn test_parse_default20() {
     let info = ParserInfo::default();
     let default_rsdate = &NaiveDate::from_ymd(2003, 9, 25).and_hms(0, 0, 0);
     let pdt = PyDateTime {
@@ -380,7 +354,7 @@ fn test_parse_default22() {
 }
 
 #[test]
-fn test_parse_default23() {
+fn test_parse_default21() {
     let info = ParserInfo::default();
     let default_rsdate = &NaiveDate::from_ymd(2003, 9, 25).and_hms(0, 0, 0);
     let pdt = PyDateTime {
@@ -393,7 +367,7 @@ fn test_parse_default23() {
 }
 
 #[test]
-fn test_parse_default24() {
+fn test_parse_default22() {
     let info = ParserInfo::default();
     let default_rsdate = &NaiveDate::from_ymd(2003, 9, 25).and_hms(0, 0, 0);
     let pdt = PyDateTime {
@@ -406,7 +380,7 @@ fn test_parse_default24() {
 }
 
 #[test]
-fn test_parse_default25() {
+fn test_parse_default23() {
     let info = ParserInfo::default();
     let default_rsdate = &NaiveDate::from_ymd(2003, 9, 25).and_hms(0, 0, 0);
     let pdt = PyDateTime {
@@ -419,7 +393,7 @@ fn test_parse_default25() {
 }
 
 #[test]
-fn test_parse_default26() {
+fn test_parse_default24() {
     let info = ParserInfo::default();
     let default_rsdate = &NaiveDate::from_ymd(2003, 9, 25).and_hms(0, 0, 0);
     let pdt = PyDateTime {
@@ -432,7 +406,7 @@ fn test_parse_default26() {
 }
 
 #[test]
-fn test_parse_default27() {
+fn test_parse_default25() {
     let info = ParserInfo::default();
     let default_rsdate = &NaiveDate::from_ymd(2003, 9, 25).and_hms(0, 0, 0);
     let pdt = PyDateTime {
@@ -445,7 +419,7 @@ fn test_parse_default27() {
 }
 
 #[test]
-fn test_parse_default28() {
+fn test_parse_default26() {
     let info = ParserInfo::default();
     let default_rsdate = &NaiveDate::from_ymd(2003, 9, 25).and_hms(0, 0, 0);
     let pdt = PyDateTime {
@@ -458,7 +432,7 @@ fn test_parse_default28() {
 }
 
 #[test]
-fn test_parse_default29() {
+fn test_parse_default27() {
     let info = ParserInfo::default();
     let default_rsdate = &NaiveDate::from_ymd(2003, 9, 25).and_hms(0, 0, 0);
     let pdt = PyDateTime {
@@ -471,7 +445,7 @@ fn test_parse_default29() {
 }
 
 #[test]
-fn test_parse_default30() {
+fn test_parse_default28() {
     let info = ParserInfo::default();
     let default_rsdate = &NaiveDate::from_ymd(2003, 9, 25).and_hms(0, 0, 0);
     let pdt = PyDateTime {
@@ -484,33 +458,7 @@ fn test_parse_default30() {
 }
 
 #[test]
-fn test_parse_default31() {
-    let info = ParserInfo::default();
-    let default_rsdate = &NaiveDate::from_ymd(2003, 9, 25).and_hms(0, 0, 0);
-    let pdt = PyDateTime {
-        year: 2003, month: 10, day: 1,
-        hour: 0, minute: 0, second: 0,
-        micros: 0, tzo: None
-    };
-    parse_and_assert(pdt, info, "Wed", None, None, false, false,
-                     Some(default_rsdate), false, HashMap::new());
-}
-
-#[test]
-fn test_parse_default32() {
-    let info = ParserInfo::default();
-    let default_rsdate = &NaiveDate::from_ymd(2003, 9, 25).and_hms(0, 0, 0);
-    let pdt = PyDateTime {
-        year: 2003, month: 10, day: 1,
-        hour: 0, minute: 0, second: 0,
-        micros: 0, tzo: None
-    };
-    parse_and_assert(pdt, info, "Wednesday", None, None, false, false,
-                     Some(default_rsdate), false, HashMap::new());
-}
-
-#[test]
-fn test_parse_default33() {
+fn test_parse_default29() {
     let info = ParserInfo::default();
     let default_rsdate = &NaiveDate::from_ymd(2003, 9, 25).and_hms(0, 0, 0);
     let pdt = PyDateTime {
@@ -523,7 +471,7 @@ fn test_parse_default33() {
 }
 
 #[test]
-fn test_parse_default34() {
+fn test_parse_default30() {
     let info = ParserInfo::default();
     let default_rsdate = &NaiveDate::from_ymd(2003, 9, 25).and_hms(0, 0, 0);
     let pdt = PyDateTime {
@@ -536,7 +484,7 @@ fn test_parse_default34() {
 }
 
 #[test]
-fn test_parse_default35() {
+fn test_parse_default31() {
     let info = ParserInfo::default();
     let default_rsdate = &NaiveDate::from_ymd(2003, 9, 25).and_hms(0, 0, 0);
     let pdt = PyDateTime {
@@ -549,7 +497,7 @@ fn test_parse_default35() {
 }
 
 #[test]
-fn test_parse_default36() {
+fn test_parse_default32() {
     let info = ParserInfo::default();
     let default_rsdate = &NaiveDate::from_ymd(2003, 9, 25).and_hms(0, 0, 0);
     let pdt = PyDateTime {
@@ -562,7 +510,7 @@ fn test_parse_default36() {
 }
 
 #[test]
-fn test_parse_default37() {
+fn test_parse_default33() {
     let info = ParserInfo::default();
     let default_rsdate = &NaiveDate::from_ymd(2003, 9, 25).and_hms(0, 0, 0);
     let pdt = PyDateTime {
@@ -575,7 +523,7 @@ fn test_parse_default37() {
 }
 
 #[test]
-fn test_parse_default38() {
+fn test_parse_default34() {
     let info = ParserInfo::default();
     let default_rsdate = &NaiveDate::from_ymd(2003, 9, 25).and_hms(0, 0, 0);
     let pdt = PyDateTime {
@@ -588,7 +536,7 @@ fn test_parse_default38() {
 }
 
 #[test]
-fn test_parse_default39() {
+fn test_parse_default35() {
     let info = ParserInfo::default();
     let default_rsdate = &NaiveDate::from_ymd(2003, 9, 25).and_hms(0, 0, 0);
     let pdt = PyDateTime {
@@ -601,7 +549,7 @@ fn test_parse_default39() {
 }
 
 #[test]
-fn test_parse_default40() {
+fn test_parse_default36() {
     let info = ParserInfo::default();
     let default_rsdate = &NaiveDate::from_ymd(2003, 9, 25).and_hms(0, 0, 0);
     let pdt = PyDateTime {
@@ -614,7 +562,7 @@ fn test_parse_default40() {
 }
 
 #[test]
-fn test_parse_default41() {
+fn test_parse_default37() {
     let info = ParserInfo::default();
     let default_rsdate = &NaiveDate::from_ymd(2003, 9, 25).and_hms(0, 0, 0);
     let pdt = PyDateTime {
@@ -627,7 +575,7 @@ fn test_parse_default41() {
 }
 
 #[test]
-fn test_parse_default42() {
+fn test_parse_default38() {
     let info = ParserInfo::default();
     let default_rsdate = &NaiveDate::from_ymd(2003, 9, 25).and_hms(0, 0, 0);
     let pdt = PyDateTime {
@@ -640,7 +588,7 @@ fn test_parse_default42() {
 }
 
 #[test]
-fn test_parse_default43() {
+fn test_parse_default39() {
     let info = ParserInfo::default();
     let default_rsdate = &NaiveDate::from_ymd(2003, 9, 25).and_hms(0, 0, 0);
     let pdt = PyDateTime {
@@ -653,7 +601,7 @@ fn test_parse_default43() {
 }
 
 #[test]
-fn test_parse_default44() {
+fn test_parse_default40() {
     let info = ParserInfo::default();
     let default_rsdate = &NaiveDate::from_ymd(2003, 9, 25).and_hms(0, 0, 0);
     let pdt = PyDateTime {
@@ -666,7 +614,7 @@ fn test_parse_default44() {
 }
 
 #[test]
-fn test_parse_default45() {
+fn test_parse_default41() {
     let info = ParserInfo::default();
     let default_rsdate = &NaiveDate::from_ymd(2003, 9, 25).and_hms(0, 0, 0);
     let pdt = PyDateTime {
@@ -679,7 +627,7 @@ fn test_parse_default45() {
 }
 
 #[test]
-fn test_parse_default46() {
+fn test_parse_default42() {
     let info = ParserInfo::default();
     let default_rsdate = &NaiveDate::from_ymd(2003, 9, 25).and_hms(0, 0, 0);
     let pdt = PyDateTime {
@@ -1696,4 +1644,60 @@ fn test_parse_ignoretz7() {
     };
     parse_and_assert(pdt, info, "Tue Apr 4 00:22:12 PDT 1995", None, None, false, false,
                      None, true, HashMap::new());
+}
+
+#[test]
+#[ignore]
+fn test_parse_default_ignore0() {
+    let info = ParserInfo::default();
+    let default_rsdate = &NaiveDate::from_ymd(2003, 9, 25).and_hms(0, 0, 0);
+    let pdt = PyDateTime {
+        year: 2003, month: 9, day: 25,
+        hour: 10, minute: 36, second: 28,
+        micros: 0, tzo: None
+    };
+    parse_and_assert(pdt, info, "Thu Sep 10:36:28", None, None, false, false,
+                     Some(default_rsdate), false, HashMap::new());
+}
+
+#[test]
+#[ignore]
+fn test_parse_default_ignore1() {
+    let info = ParserInfo::default();
+    let default_rsdate = &NaiveDate::from_ymd(2003, 9, 25).and_hms(0, 0, 0);
+    let pdt = PyDateTime {
+        year: 2003, month: 9, day: 25,
+        hour: 10, minute: 36, second: 28,
+        micros: 0, tzo: None
+    };
+    parse_and_assert(pdt, info, "Thu 10:36:28", None, None, false, false,
+                     Some(default_rsdate), false, HashMap::new());
+}
+
+#[test]
+#[ignore]
+fn test_parse_default_ignore2() {
+    let info = ParserInfo::default();
+    let default_rsdate = &NaiveDate::from_ymd(2003, 9, 25).and_hms(0, 0, 0);
+    let pdt = PyDateTime {
+        year: 2003, month: 10, day: 1,
+        hour: 0, minute: 0, second: 0,
+        micros: 0, tzo: None
+    };
+    parse_and_assert(pdt, info, "Wed", None, None, false, false,
+                     Some(default_rsdate), false, HashMap::new());
+}
+
+#[test]
+#[ignore]
+fn test_parse_default_ignore3() {
+    let info = ParserInfo::default();
+    let default_rsdate = &NaiveDate::from_ymd(2003, 9, 25).and_hms(0, 0, 0);
+    let pdt = PyDateTime {
+        year: 2003, month: 10, day: 1,
+        hour: 0, minute: 0, second: 0,
+        micros: 0, tzo: None
+    };
+    parse_and_assert(pdt, info, "Wednesday", None, None, false, false,
+                     Some(default_rsdate), false, HashMap::new());
 }
