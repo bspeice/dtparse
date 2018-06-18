@@ -13,6 +13,8 @@ tests = {
         "01h02m03", "01h02", "01h02s", "01m02", "01m02h", "2004 10 Apr 11h30m",
         # testPertain
         'Sep 03', 'Sep of 03',
+        # test_hmBY - Note: This appears to be Python 3 only, no idea why
+        '02:17NOV2017'
     ],
     'test_parse_simple': [
         "Thu Sep 25 10:36:28 2003", "Thu Sep 25 2003", "2003-09-25T10:49:41",
@@ -37,8 +39,6 @@ tests = {
         '090107',
         # test_mstridx
         '2015-15-May',
-        # test_hmBY
-        '02:17NOV2017'
     ],
     'test_parse_tzinfo': [
         'Thu Sep 25 10:36:28 BRST 2003', '2003 10:36:28 BRST 25 Sep Thu',

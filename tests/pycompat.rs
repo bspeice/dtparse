@@ -679,6 +679,19 @@ fn test_parse_default45() {
 }
 
 #[test]
+fn test_parse_default46() {
+    let info = ParserInfo::default();
+    let default_rsdate = &NaiveDate::from_ymd(2003, 9, 25).and_hms(0, 0, 0);
+    let pdt = PyDateTime {
+        year: 2017, month: 11, day: 25,
+        hour: 2, minute: 17, second: 0,
+        micros: 0, tzo: None
+    };
+    parse_and_assert(pdt, info, "02:17NOV2017", None, None, false, false,
+                     Some(default_rsdate), false, HashMap::new());
+}
+
+#[test]
 fn test_parse_simple0() {
     let pdt = PyDateTime {
         year: 2003, month: 9, day: 25,
@@ -1296,16 +1309,6 @@ fn test_parse_simple61() {
         micros: 0, tzo: None,
     };
     parse_and_assert_simple(pdt, "2015-15-May");
-}
-
-#[test]
-fn test_parse_simple62() {
-    let pdt = PyDateTime {
-        year: 2017, month: 11, day: 13,
-        hour: 2, minute: 17, second: 0,
-        micros: 0, tzo: None,
-    };
-    parse_and_assert_simple(pdt, "02:17NOV2017");
 }
 
 #[test]
