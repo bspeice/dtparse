@@ -1161,7 +1161,7 @@ impl Parser {
                 if let Ok(val) = tokens[idx + 2].parse::<i32>() {
                     ymd.append(val, &tokens[idx + 2], None);
                 } else if let Some(val) = info.get_month(&tokens[idx + 2]) {
-                    ymd.append(val as i32, &value_repr, Some(YMDLabel::Month));
+                    ymd.append(val as i32, &tokens[idx + 2], Some(YMDLabel::Month));
                 }
 
                 if idx + 3 < len_l && &tokens[idx + 3] == sep {
