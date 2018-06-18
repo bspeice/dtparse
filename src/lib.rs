@@ -21,6 +21,7 @@ use num_traits::cast::ToPrimitive;
 use rust_decimal::Decimal;
 use rust_decimal::Error as DecimalError;
 use std::collections::HashMap;
+use std::cmp::min;
 use std::num::ParseIntError;
 use std::str::FromStr;
 use std::vec::Vec;
@@ -447,9 +448,9 @@ impl ParserInfo {
     }
 }
 
-fn days_in_month(year: i32, month: i32) -> Result<i32, ParseError> {
+fn days_in_month(year: i32, month: i32) -> Result<u32, ParseError> {
     let leap_year = match year % 4 {
-        0 => year % 400 == 0,
+        0 => year % 400 != 0,
         _ => false,
     };
 
@@ -495,11 +496,11 @@ impl YMD {
             // UNWRAP: mstridx guaranteed to have a value
             // TODO: Justify unwrap for self._ymd
             let month = self._ymd[self.mstridx.unwrap()];
-            1 <= val && (val <= days_in_month(2000, month).unwrap())
+            1 <= val && (val <= days_in_month(2000, month).unwrap() as i32)
         } else {
             let month = self._ymd[self.mstridx.unwrap()];
             let year = self._ymd[self.ystridx.unwrap()];
-            1 <= val && (val <= days_in_month(year, month).unwrap())
+            1 <= val && (val <= days_in_month(year, month).unwrap() as i32)
         }
     }
 
@@ -987,11 +988,14 @@ impl Parser {
     fn build_naive(&self, res: &ParsingResult, default: &NaiveDateTime) -> NaiveDateTime {
         // TODO: Handle weekday here
 
+        let y = res.year.unwrap_or(default.year());
+        let m = res.month.unwrap_or(default.month() as i32) as u32;
+
         // TODO: Change month/day to u32
         let d = NaiveDate::from_ymd(
-            res.year.unwrap_or(default.year()),
-            res.month.unwrap_or(default.month() as i32) as u32,
-            res.day.unwrap_or(default.day() as i32) as u32,
+            y,
+            m,
+            min(res.day.unwrap_or(default.day() as i32) as u32, days_in_month(y, m as i32).unwrap())
         );
 
         let t = NaiveTime::from_hms_micro(
