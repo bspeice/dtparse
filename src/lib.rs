@@ -10,6 +10,7 @@ extern crate rust_decimal;
 
 use chrono::DateTime;
 use chrono::Datelike;
+use chrono::Duration;
 use chrono::FixedOffset;
 use chrono::Local;
 use chrono::NaiveDate;
@@ -25,6 +26,11 @@ use std::cmp::min;
 use std::num::ParseIntError;
 use std::str::FromStr;
 use std::vec::Vec;
+
+mod weekday;
+
+use weekday::day_of_week;
+use weekday::DayOfWeek;
 
 lazy_static! {
     static ref ZERO: Decimal = Decimal::new(0, 0);
@@ -62,6 +68,7 @@ impl From<ParseIntError> for ParseInternalError {
 pub enum ParseError {
     AmbiguousWeekday,
     InternalError(ParseInternalError),
+    InvalidDay,
     InvalidMonth,
     UnrecognizedToken(String),
     InvalidParseResult(ParsingResult),
@@ -760,7 +767,7 @@ pub struct ParsingResult {
     year: Option<i32>,
     month: Option<i32>,
     day: Option<i32>,
-    weekday: Option<bool>,
+    weekday: Option<usize>,
     hour: Option<i32>,
     minute: Option<i32>,
     second: Option<i32>,
@@ -848,7 +855,7 @@ impl Parser {
             if let Ok(v) = Decimal::from_str(&value_repr) {
                 i = self.parse_numeric_token(&l, i, &self.info, &mut ymd, &mut res, fuzzy)?;
             } else if let Some(value) = self.info.get_weekday(&l[i]) {
-                res.weekday = Some(value != 0);
+                res.weekday = Some(value);
             } else if let Some(value) = self.info.get_month(&l[i]) {
                 ymd.append(value as i32, &l[i], Some(YMDLabel::Month));
 
@@ -1013,20 +1020,32 @@ impl Parser {
     }
 
     fn build_naive(&self, res: &ParsingResult, default: &NaiveDateTime) -> ParseResult<NaiveDateTime> {
-        // TODO: Handle weekday here - dateutils uses relativedelta to accomplish this
-        if res.weekday.is_some() && res.day.is_none() {
-            return Err(ParseError::AmbiguousWeekday);
-        }
-
         let y = res.year.unwrap_or(default.year());
         let m = res.month.unwrap_or(default.month() as i32) as u32;
 
+        let d_offset = if res.weekday.is_some() && res.day.is_none() {
+            // TODO: Unwrap not justified
+            let dow = day_of_week(y as u32, m, default.day()).unwrap();
+            println!("dow: {:?}", dow);
+
+            // UNWRAP: We've already check res.weekday() is some
+            let actual_weekday = (res.weekday.unwrap() + 1) % 7;
+            let other = DayOfWeek::from_numeral(actual_weekday as u32);
+            Duration::days(dow.difference(other) as i64)
+        } else {
+            Duration::days(0)
+        };
+
         // TODO: Change month/day to u32
-        let d = NaiveDate::from_ymd(
+        let mut d = NaiveDate::from_ymd(
             y,
             m,
             min(res.day.unwrap_or(default.day() as i32) as u32, days_in_month(y, m as i32).unwrap())
         );
+
+        println!("d: {:?}, d_offset: {:?}", d, d_offset);
+
+        let d = d + d_offset;
 
         let t = NaiveTime::from_hms_micro(
             res.hour.unwrap_or(default.hour() as i32) as u32,
