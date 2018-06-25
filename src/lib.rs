@@ -647,6 +647,16 @@ impl YMD {
         let mut day: Option<i32> = None;
         let mut other: Option<i32> = None;
 
+        macro_rules! dmy {
+            ($d:expr, $m:expr, $y:expr) => {
+                {
+                    day = $d;
+                month = $m;
+                    year = $y;
+                }
+            };
+        }
+
         let mut strids: HashMap<YMDLabel, usize> = HashMap::new();
         self.ystridx
             .map(|u| strids.insert(YMDLabel::Year, u.clone()));
@@ -668,7 +678,8 @@ impl YMD {
             return Err(ParseInternalError::ValueError(
                 "More than three YMD values".to_owned(),
             ));
-        } else if len_ymd == 1 || (self.mstridx.is_some() && len_ymd == 2) {
+        }
+        if len_ymd == 1 || (self.mstridx.is_some() && len_ymd == 2) {
             if self.mstridx.is_some() {
                 month = Some(self._ymd[self.mstridx.unwrap()]);
                 other = if len_ymd == 1 {
@@ -689,71 +700,47 @@ impl YMD {
             }
         } else if len_ymd == 2 {
             if self._ymd[0] > 31 {
-                year = Some(self._ymd[0]);
-                month = Some(self._ymd[1]);
+                dmy!(None, Some(self._ymd[1]), Some(self._ymd[0]));
             } else if self._ymd[1] > 31 {
-                month = Some(self._ymd[0]);
-                year = Some(self._ymd[1]);
+                dmy!(None, Some(self._ymd[0]), Some(self._ymd[1]));
             } else if dayfirst && self._ymd[1] <= 12 {
-                day = Some(self._ymd[0]);
-                month = Some(self._ymd[1]);
+                dmy!(Some(self._ymd[0]), Some(self._ymd[1]), None);
             } else {
-                month = Some(self._ymd[0]);
-                day = Some(self._ymd[1]);
+                dmy!(Some(self._ymd[1]), Some(self._ymd[0]), None);
             }
         } else if len_ymd == 3 {
             if self.mstridx == Some(0) {
                 if self._ymd[1] > 31 {
-                    month = Some(self._ymd[0]);
-                    year = Some(self._ymd[1]);
-                    day = Some(self._ymd[2]);
+                    dmy!(Some(self._ymd[2]), Some(self._ymd[0]), Some(self._ymd[1]));
                 } else {
-                    month = Some(self._ymd[0]);
-                    day = Some(self._ymd[1]);
-                    year = Some(self._ymd[2]);
+                    dmy!(Some(self._ymd[1]), Some(self._ymd[0]), Some(self._ymd[2]));
                 }
             } else if self.mstridx == Some(1) {
                 if self._ymd[0] > 31 || (yearfirst && self._ymd[2] <= 31) {
-                    year = Some(self._ymd[0]);
-                    month = Some(self._ymd[1]);
-                    day = Some(self._ymd[2]);
+                    dmy!(Some(self._ymd[2]), Some(self._ymd[1]), Some(self._ymd[0]));
                 } else {
-                    day = Some(self._ymd[0]);
-                    month = Some(self._ymd[1]);
-                    year = Some(self._ymd[2]);
+                    dmy!(Some(self._ymd[0]), Some(self._ymd[1]), Some(self._ymd[2]));
                 }
             } else if self.mstridx == Some(2) {
                 // It was in the original docs, so: WTF!?
                 if self._ymd[1] > 31 {
-                    day = Some(self._ymd[0]);
-                    year = Some(self._ymd[1]);
-                    month = Some(self._ymd[2]);
+                    dmy!(Some(self._ymd[0]), Some(self._ymd[1]), Some(self._ymd[2]));
                 } else {
-                    year = Some(self._ymd[0]);
-                    day = Some(self._ymd[1]);
-                    month = Some(self._ymd[2]);
+                    dmy!(Some(self._ymd[1]), Some(self._ymd[2]), Some(self._ymd[0]));
                 }
             } else {
                 if self._ymd[0] > 31 || self.ystridx == Some(0)
                     || (yearfirst && self._ymd[1] <= 12 && self._ymd[2] <= 31)
                 {
                     if dayfirst && self._ymd[2] <= 12 {
-                        year = Some(self._ymd[0]);
-                        day = Some(self._ymd[1]);
-                        month = Some(self._ymd[2]);
+                        dmy!(Some(self._ymd[1]), Some(self._ymd[2]), Some(self._ymd[0]));
                     } else {
-                        year = Some(self._ymd[0]);
-                        month = Some(self._ymd[1]);
-                        day = Some(self._ymd[2]);
+                        dmy!(Some(self._ymd[2]), Some(self._ymd[1]), Some(self._ymd[0]));
                     }
                 } else if self._ymd[0] > 12 || (dayfirst && self._ymd[1] <= 12) {
-                    day = Some(self._ymd[0]);
-                    month = Some(self._ymd[1]);
-                    year = Some(self._ymd[2]);
+                    dmy!(Some(self._ymd[0]), Some(self._ymd[1]), Some(self._ymd[2]));
                 } else {
-                    month = Some(self._ymd[0]);
-                    day = Some(self._ymd[1]);
-                    year = Some(self._ymd[2]);
+                    dmy!(Some(self._ymd[1]), Some(self._ymd[0]), Some(self._ymd[2]));
                 }
             }
         }
