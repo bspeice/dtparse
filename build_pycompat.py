@@ -17,7 +17,6 @@ tests = {
         '02:17NOV2017',
         # Weekdays
         "Thu Sep 10:36:28", "Thu 10:36:28", "Wed", "Wednesday"
-        # TODO: Tests for when forwarding to the 
     ],
     'test_parse_simple': [
         "Thu Sep 25 10:36:28 2003", "Thu Sep 25 2003", "2003-09-25T10:49:41",
