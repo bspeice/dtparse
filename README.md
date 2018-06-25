@@ -10,7 +10,7 @@ The issues to be resolved before version 1.0:
 
 **Functionality**:
 
-1. -We don't support weekday parsing. In the Python side this is accomplished via `dateutil.relativedelta`-
+1. ~~We don't support weekday parsing. In the Python side this is accomplished via `dateutil.relativedelta`~~
 Supported in v0.8
 
 2. Named timezones aren't supported very well. [chrono_tz](https://github.com/chronotope/chrono-tz)
