@@ -651,7 +651,7 @@ impl YMD {
             ($d:expr, $m:expr, $y:expr) => {
                 {
                     day = $d;
-                month = $m;
+                    month = $m;
                     year = $y;
                 }
             };
@@ -679,34 +679,35 @@ impl YMD {
                 "More than three YMD values".to_owned(),
             ));
         }
-        if len_ymd == 1 || (self.mstridx.is_some() && len_ymd == 2) {
+        if len_ymd == 1 {
             if self.mstridx.is_some() {
                 month = Some(self._ymd[self.mstridx.unwrap()]);
-                other = if len_ymd == 1 {
-                    Some(self._ymd[0])
+                let other = self._ymd[0];
+                if other > 31 {
+                    year = Some(other);
                 } else {
-                    Some(self._ymd[1 - self.mstridx.unwrap()])
-                };
-            } else {
-                other = Some(self._ymd[0]);
-            }
-
-            if len_ymd > 1 || self.mstridx.is_some() {
-                if other.unwrap_or(0) > 31 {
-                    year = other;
-                } else {
-                    day = other;
+                    day = Some(other);
                 }
             }
         } else if len_ymd == 2 {
-            if self._ymd[0] > 31 {
-                dmy!(None, Some(self._ymd[1]), Some(self._ymd[0]));
-            } else if self._ymd[1] > 31 {
-                dmy!(None, Some(self._ymd[0]), Some(self._ymd[1]));
-            } else if dayfirst && self._ymd[1] <= 12 {
-                dmy!(Some(self._ymd[0]), Some(self._ymd[1]), None);
+            if self.mstridx.is_some() {
+                month = Some(self._ymd[self.mstridx.unwrap()]);
+                let other = self._ymd[1 - self.mstridx.unwrap()];
+                if other > 31 {
+                    year = Some(other);
+                } else {
+                    day = Some(other);
+                }
             } else {
-                dmy!(Some(self._ymd[1]), Some(self._ymd[0]), None);
+                if self._ymd[0] > 31 {
+                    dmy!(None, Some(self._ymd[1]), Some(self._ymd[0]));
+                } else if self._ymd[1] > 31 {
+                    dmy!(None, Some(self._ymd[0]), Some(self._ymd[1]));
+                } else if dayfirst && self._ymd[1] <= 12 {
+                    dmy!(Some(self._ymd[0]), Some(self._ymd[1]), None);
+                } else {
+                    dmy!(Some(self._ymd[1]), Some(self._ymd[0]), None);
+                }
             }
         } else if len_ymd == 3 {
             if self.mstridx == Some(0) {
