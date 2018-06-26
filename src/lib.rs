@@ -642,10 +642,6 @@ impl YMD {
         dayfirst: bool,
     ) -> ParseIResult<(Option<i32>, Option<i32>, Option<i32>)> {
         let len_ymd = self._ymd.len();
-        let mut year: Option<i32> = None;
-        let mut month: Option<i32> = None;
-        let mut day: Option<i32> = None;
-        let mut other: Option<i32> = None;
 
         let mut strids: HashMap<YMDLabel, usize> = HashMap::new();
         self.ystridx
@@ -656,109 +652,77 @@ impl YMD {
             .map(|u| strids.insert(YMDLabel::Day, u.clone()));
 
         // TODO: More Rustiomatic way of doing this?
-        if self._ymd.len() == strids.len() && strids.len() > 0
-            || (self._ymd.len() == 3 && strids.len() == 2)
+        if len_ymd == strids.len() && strids.len() > 0
+            || (len_ymd == 3 && strids.len() == 2)
         {
             return self.resolve_from_stridxs(&mut strids);
         };
 
-        // TODO: More Rustiomatic? Too many blocks for my liking
-        // Also having the array unpacking syntax is nice
         if len_ymd > 3 {
             return Err(ParseInternalError::ValueError(
                 "More than three YMD values".to_owned(),
             ));
-        } else if len_ymd == 1 || (self.mstridx.is_some() && len_ymd == 2) {
-            if self.mstridx.is_some() {
-                month = Some(self._ymd[self.mstridx.unwrap()]);
-                other = if len_ymd == 1 {
-                    Some(self._ymd[0])
-                } else {
-                    Some(self._ymd[1 - self.mstridx.unwrap()])
-                };
-            } else {
-                other = Some(self._ymd[0]);
-            }
+        }
 
-            if len_ymd > 1 || self.mstridx.is_some() {
-                if other.unwrap_or(0) > 31 {
-                    year = other;
+        match (len_ymd, self.mstridx) {
+            (1, Some(val)) |
+            (2, Some(val)) => {
+                let other = if len_ymd == 1 {
+                    self._ymd[0]
                 } else {
-                    day = other;
+                    self._ymd[1 - val]
+                };
+                if other > 31 {
+                    return Ok((Some(other), Some(self._ymd[val]), None));
                 }
-            }
-        } else if len_ymd == 2 {
-            if self._ymd[0] > 31 {
-                year = Some(self._ymd[0]);
-                month = Some(self._ymd[1]);
-            } else if self._ymd[1] > 31 {
-                month = Some(self._ymd[0]);
-                year = Some(self._ymd[1]);
-            } else if dayfirst && self._ymd[1] <= 12 {
-                day = Some(self._ymd[0]);
-                month = Some(self._ymd[1]);
-            } else {
-                month = Some(self._ymd[0]);
-                day = Some(self._ymd[1]);
-            }
-        } else if len_ymd == 3 {
-            if self.mstridx == Some(0) {
+                return Ok((None, Some(self._ymd[val]), Some(other)));
+            },
+            (2, None) => {
+                if self._ymd[0] > 31 {
+                    return Ok((Some(self._ymd[0]), Some(self._ymd[1]), None));
+                }
                 if self._ymd[1] > 31 {
-                    month = Some(self._ymd[0]);
-                    year = Some(self._ymd[1]);
-                    day = Some(self._ymd[2]);
-                } else {
-                    month = Some(self._ymd[0]);
-                    day = Some(self._ymd[1]);
-                    year = Some(self._ymd[2]);
+                    return Ok((Some(self._ymd[1]), Some(self._ymd[0]), None));
                 }
-            } else if self.mstridx == Some(1) {
+                if dayfirst && self._ymd[1] <= 12 {
+                    return Ok((None, Some(self._ymd[1]), Some(self._ymd[0])));
+                }
+                return Ok((None, Some(self._ymd[0]), Some(self._ymd[1])));
+            },
+            (3, Some(0)) => {
+                if self._ymd[1] > 31 {
+                    return Ok((Some(self._ymd[1]), Some(self._ymd[0]), Some(self._ymd[2])));
+                }
+                return Ok((Some(self._ymd[2]), Some(self._ymd[0]), Some(self._ymd[1])));
+            },
+            (3, Some(1)) => {
                 if self._ymd[0] > 31 || (yearfirst && self._ymd[2] <= 31) {
-                    year = Some(self._ymd[0]);
-                    month = Some(self._ymd[1]);
-                    day = Some(self._ymd[2]);
-                } else {
-                    day = Some(self._ymd[0]);
-                    month = Some(self._ymd[1]);
-                    year = Some(self._ymd[2]);
+                    return Ok((Some(self._ymd[0]), Some(self._ymd[1]), Some(self._ymd[2])));
                 }
-            } else if self.mstridx == Some(2) {
+                return Ok((Some(self._ymd[2]), Some(self._ymd[1]), Some(self._ymd[0])));
+            },
+            (3, Some(2)) => {
                 // It was in the original docs, so: WTF!?
                 if self._ymd[1] > 31 {
-                    day = Some(self._ymd[0]);
-                    year = Some(self._ymd[1]);
-                    month = Some(self._ymd[2]);
-                } else {
-                    year = Some(self._ymd[0]);
-                    day = Some(self._ymd[1]);
-                    month = Some(self._ymd[2]);
+                    return Ok((Some(self._ymd[2]), Some(self._ymd[1]), Some(self._ymd[0])));
                 }
-            } else {
+                return Ok((Some(self._ymd[0]), Some(self._ymd[2]), Some(self._ymd[1])));
+            },
+            (3, None) => {
                 if self._ymd[0] > 31 || self.ystridx == Some(0)
                     || (yearfirst && self._ymd[1] <= 12 && self._ymd[2] <= 31)
                 {
                     if dayfirst && self._ymd[2] <= 12 {
-                        year = Some(self._ymd[0]);
-                        day = Some(self._ymd[1]);
-                        month = Some(self._ymd[2]);
-                    } else {
-                        year = Some(self._ymd[0]);
-                        month = Some(self._ymd[1]);
-                        day = Some(self._ymd[2]);
+                        return Ok((Some(self._ymd[0]), Some(self._ymd[2]), Some(self._ymd[1])));
                     }
+                    return Ok((Some(self._ymd[0]), Some(self._ymd[1]), Some(self._ymd[2])));
                 } else if self._ymd[0] > 12 || (dayfirst && self._ymd[1] <= 12) {
-                    day = Some(self._ymd[0]);
-                    month = Some(self._ymd[1]);
-                    year = Some(self._ymd[2]);
-                } else {
-                    month = Some(self._ymd[0]);
-                    day = Some(self._ymd[1]);
-                    year = Some(self._ymd[2]);
+                    return Ok((Some(self._ymd[2]), Some(self._ymd[1]), Some(self._ymd[0])));
                 }
-            }
+                return Ok((Some(self._ymd[2]), Some(self._ymd[0]), Some(self._ymd[1])));
+            },
+            (_, _) => { return Ok((None, None, None)); },
         }
-
-        Ok((year, month, day))
     }
 }
 
