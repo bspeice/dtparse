@@ -29,6 +29,9 @@ use std::vec::Vec;
 
 mod weekday;
 
+#[cfg(test)]
+mod tests;
+
 use weekday::day_of_week;
 use weekday::DayOfWeek;
 
@@ -64,7 +67,7 @@ impl From<ParseIntError> for ParseInternalError {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum ParseError {
     AmbiguousWeekday,
     InternalError(ParseInternalError),
@@ -471,7 +474,6 @@ fn days_in_month(year: i32, month: i32) -> Result<u32, ParseError> {
         1 | 3 | 5 | 7 | 8 | 10 | 12 => Ok(31),
         4 | 6 | 9 | 11 => Ok(30),
         _ => {
-            println!("Invalid month: {}", month);
             Err(ParseError::InvalidMonth)
         }
     }
@@ -522,8 +524,6 @@ impl YMD {
 
     fn append(&mut self, val: i32, token: &str, label: Option<YMDLabel>) -> ParseIResult<()> {
         let mut label = label;
-
-        println!("Val: {}, Token: {}", val, token);
 
         // Python auto-detects strings using the '__len__' function here.
         // We instead take in both and handle as necessary.
@@ -725,7 +725,7 @@ impl YMD {
     }
 }
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, PartialEq)]
 pub struct ParsingResult {
     year: Option<i32>,
     month: Option<i32>,
@@ -989,7 +989,6 @@ impl Parser {
         let d_offset = if res.weekday.is_some() && res.day.is_none() {
             // TODO: Unwrap not justified
             let dow = day_of_week(y as u32, m, default.day()).unwrap();
-            println!("dow: {:?}", dow);
 
             // UNWRAP: We've already check res.weekday() is some
             let actual_weekday = (res.weekday.unwrap() + 1) % 7;
@@ -1003,10 +1002,8 @@ impl Parser {
         let mut d = NaiveDate::from_ymd(
             y,
             m,
-            min(res.day.unwrap_or(default.day() as i32) as u32, days_in_month(y, m as i32).unwrap())
+            min(res.day.unwrap_or(default.day() as i32) as u32, days_in_month(y, m as i32)?)
         );
-
-        println!("d: {:?}, d_offset: {:?}", d, d_offset);
 
         let d = d + d_offset;
 
@@ -1291,7 +1288,6 @@ impl Parser {
 
         let sec_remainder = value - value.floor();
         if sec_remainder != *ZERO {
-            println!("{}", *SIXTY * sec_remainder);
             second = Some((*SIXTY * sec_remainder).floor().to_i64().unwrap() as i32);
         }
 
