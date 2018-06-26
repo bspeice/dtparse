@@ -387,7 +387,7 @@ impl ParserInfo {
     }
 
     fn get_weekday(&self, name: &str) -> Option<usize> {
-        self.weekday.get(&name.to_lowercase()).cloned() // TODO: Why do I have to clone a primitive?
+        self.weekday.get(&name.to_lowercase()).map(|i| *i)
     }
 
     fn get_month(&self, name: &str) -> Option<usize> {
@@ -395,7 +395,7 @@ impl ParserInfo {
     }
 
     fn get_hms(&self, name: &str) -> Option<usize> {
-        self.hms.get(&name.to_lowercase()).cloned()
+        self.hms.get(&name.to_lowercase()).map(|i| *i)
     }
 
     fn get_ampm(&self, name: &str) -> Option<bool> {
@@ -495,7 +495,7 @@ struct YMD {
 
 enum YMDAppendEither {
     Number(i32),
-    Stringy(String), // TODO: Better name?
+    Stringy(String),
 }
 
 impl YMD {
@@ -509,11 +509,11 @@ impl YMD {
         } else if self.mstridx.is_none() {
             (1 <= val) && (val <= 31)
         } else if self.ystridx.is_none() {
-            // UNWRAP: mstridx guaranteed to have a value
-            // TODO: Justify unwrap for self._ymd
+            // UNWRAP: Earlier condition catches mstridx missing
             let month = self._ymd[self.mstridx.unwrap()];
             1 <= val && (val <= days_in_month(2000, month).unwrap() as i32)
         } else {
+            // UNWRAP: Earlier conditions prevent us from unsafely unwrapping
             let month = self._ymd[self.mstridx.unwrap()];
             let year = self._ymd[self.ystridx.unwrap()];
             1 <= val && (val <= days_in_month(year, month).unwrap() as i32)
@@ -622,17 +622,16 @@ impl YMD {
             return Err(ParseInternalError::YMDEarlyResolve);
         }
 
-        // TODO: Why do I have to clone &usize? Isn't it Copy?
         Ok((
             strids
                 .get(&YMDLabel::Year)
-                .map(|i| self._ymd.get(*i).unwrap().clone()),
+                .map(|i| self._ymd[*i]),
             strids
                 .get(&YMDLabel::Month)
-                .map(|i| self._ymd.get(*i).unwrap().clone()),
+                .map(|i| self._ymd[*i]),
             strids
                 .get(&YMDLabel::Day)
-                .map(|i| self._ymd.get(*i).unwrap().clone()),
+                .map(|i| self._ymd[*i]),
         ))
     }
 
@@ -1282,7 +1281,7 @@ impl Parser {
     }
 
     fn to_decimal(&self, value: &str) -> Decimal {
-        // TODO: Actual decimals, and handling infinity
+        // TODO: Justify unwrap
         Decimal::from_str(value).unwrap()
     }
 
