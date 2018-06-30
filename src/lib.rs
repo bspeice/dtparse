@@ -1218,6 +1218,21 @@ impl Parser {
         let len_l = tokens.len();
         let mut hms_idx = None;
 
+        // There's a super weird edge case that can happen
+        // because Python safely handles negative array indices,
+        // and Rust (because of usize) does not.
+        let idx_minus_two = if idx == 1 && len_l > 0 {
+            len_l - 1
+        } else if idx == 0 && len_l > 1 {
+            len_l - 2
+        } else if idx > 1 {
+            idx - 2
+        } else if len_l == 0{
+            panic!("Attempting to find_hms_index() wih no tokens.");
+        } else {
+            0
+        };
+
         if idx + 1 < len_l && info.get_hms(&tokens[idx + 1]).is_some() {
             hms_idx = Some(idx + 1)
         } else if allow_jump && idx + 2 < len_l && tokens[idx + 1] == " "
@@ -1227,7 +1242,7 @@ impl Parser {
         } else if idx > 0 && info.get_hms(&tokens[idx - 1]).is_some() {
             hms_idx = Some(idx - 1)
         } else if len_l > 0 && idx > 0 && idx == len_l - 1 && tokens[idx - 1] == " "
-            && info.get_hms(&tokens[idx - 2]).is_some()
+            && info.get_hms(&tokens[idx_minus_two]).is_some()
         {
             hms_idx = Some(idx - 2)
         }
