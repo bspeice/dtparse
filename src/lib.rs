@@ -566,7 +566,6 @@ impl Parser {
 
         let default_ts = NaiveDateTime::new(default_date, NaiveTime::from_hms(0, 0, 0));
 
-        // TODO: What should be done with the tokens?
         let (res, tokens) =
             self.parse_with_tokens(timestr, dayfirst, yearfirst, fuzzy, fuzzy_with_tokens)?;
 
