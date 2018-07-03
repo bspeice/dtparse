@@ -72,6 +72,42 @@ fn parse_and_assert_simple(
     assert_eq!(pdt.tzo, rs_parsed.1.map(|u| u.local_minus_utc()), "Timezone Offset mismatch for {}", s);
 }
 
+fn parse_fuzzy_and_assert(
+    pdt: PyDateTime,
+    ptokens: Option<Vec<String>>,
+    info: ParserInfo,
+    s: &str,
+    dayfirst: Option<bool>,
+    yearfirst: Option<bool>,
+    fuzzy: bool,
+    fuzzy_with_tokens: bool,
+    default: Option<&NaiveDateTime>,
+    ignoretz: bool,
+    tzinfos: HashMap<String, i32>,
+) {
+
+    let mut parser = Parser::new(info);
+    let rs_parsed = parser.parse(
+        s,
+        dayfirst,
+        yearfirst,
+        fuzzy,
+        fuzzy_with_tokens,
+        default,
+        ignoretz,
+        tzinfos).expect(&format!("Unable to parse date in Rust '{}'", s));
+
+    assert_eq!(pdt.year, rs_parsed.0.year(), "Year mismatch for '{}'", s);
+    assert_eq!(pdt.month, rs_parsed.0.month(), "Month mismatch for '{}'", s);
+    assert_eq!(pdt.day, rs_parsed.0.day(), "Day mismatch for '{}'", s);
+    assert_eq!(pdt.hour, rs_parsed.0.hour(), "Hour mismatch for '{}'", s);
+    assert_eq!(pdt.minute, rs_parsed.0.minute(), "Minute mismatch f'or' {}", s);
+    assert_eq!(pdt.second, rs_parsed.0.second(), "Second mismatch for '{}'", s);
+    assert_eq!(pdt.micros, rs_parsed.0.timestamp_subsec_micros(), "Microsecond mismatch for {}", s);
+    assert_eq!(pdt.tzo, rs_parsed.1.map(|u| u.local_minus_utc()), "Timezone Offset mismatch for {}", s);
+    assert_eq!(ptokens, rs_parsed.2, "Fuzzy mismatch for {}", s);
+}
+
 macro_rules! rs_tzinfo_map {
     () => ({
         let mut h = HashMap::new();
@@ -1696,4 +1732,16 @@ fn test_parse_ignoretz7() {
     };
     parse_and_assert(pdt, info, "Tue Apr 4 00:22:12 PDT 1995", None, None, false, false,
                      None, true, HashMap::new());
+}
+
+#[test]
+fn test_fuzzy0() {
+    let info = ParserInfo::default();
+    let pdt = PyDateTime {
+        year: 2003, month: 9, day: 25,
+        hour: 10, minute: 49, second: 41,
+        micros: 0, tzo: None
+    };
+    parse_fuzzy_and_assert(pdt, None, info, "Today is 25 of September of 2003, exactly at 10:49:41 with timezone -03:00.", None, None, true, false,
+                           None, false, HashMap::new());
 }
