@@ -1,6 +1,3 @@
-#![allow(dead_code)]
-#![allow(unused)]
-
 #[macro_use]
 extern crate lazy_static;
 
@@ -8,7 +5,6 @@ extern crate chrono;
 extern crate num_traits;
 extern crate rust_decimal;
 
-use chrono::DateTime;
 use chrono::Datelike;
 use chrono::Duration;
 use chrono::FixedOffset;
@@ -17,7 +13,6 @@ use chrono::NaiveDate;
 use chrono::NaiveDateTime;
 use chrono::NaiveTime;
 use chrono::Timelike;
-use chrono::Utc;
 use num_traits::cast::ToPrimitive;
 use rust_decimal::Decimal;
 use rust_decimal::Error as DecimalError;
@@ -33,7 +28,6 @@ mod weekday;
 #[cfg(test)]
 mod tests;
 
-use tokenize::ParseState;
 use tokenize::Tokenizer;
 use weekday::day_of_week;
 use weekday::DayOfWeek;
@@ -59,13 +53,13 @@ pub enum ParseInternalError {
 }
 
 impl From<DecimalError> for ParseInternalError {
-    fn from(err: DecimalError) -> Self {
+    fn from(_err: DecimalError) -> Self {
         ParseInternalError::InvalidDecimal
     }
 }
 
 impl From<ParseIntError> for ParseInternalError {
-    fn from(err: ParseIntError) -> Self {
+    fn from(_err: ParseIntError) -> Self {
         ParseInternalError::InvalidInteger
     }
 }
@@ -294,11 +288,6 @@ struct YMD {
     ystridx: Option<usize>,
 }
 
-enum YMDAppendEither {
-    Number(i32),
-    Stringy(String),
-}
-
 impl YMD {
     fn len(&self) -> usize {
         self._ymd.len()
@@ -388,7 +377,7 @@ impl YMD {
                     Ok(())
                 }
             }
-            None => Err(ParseInternalError::ValueError("Missing label.".to_owned())),
+            None => Ok(()),
         }
     }
 
@@ -613,34 +602,34 @@ impl Parser {
         while i < len_l {
             let value_repr = l[i].clone();
 
-            if let Ok(v) = Decimal::from_str(&value_repr) {
+            if let Ok(_v) = Decimal::from_str(&value_repr) {
                 i = self.parse_numeric_token(&l, i, &self.info, &mut ymd, &mut res, fuzzy)?;
             } else if let Some(value) = self.info.get_weekday(&l[i]) {
                 res.weekday = Some(value);
             } else if let Some(value) = self.info.get_month(&l[i]) {
-                ymd.append(value as i32, &l[i], Some(YMDLabel::Month));
+                ymd.append(value as i32, &l[i], Some(YMDLabel::Month))?;
 
                 if i + 1 < len_l {
                     if l[i + 1] == "-" || l[i + 1] == "/" {
                         // Jan-01[-99]
                         let sep = &l[i + 1];
                         // TODO: This seems like a very unsafe unwrap
-                        ymd.append(l[i + 2].parse::<i32>().unwrap(), &l[i + 2], None);
+                        ymd.append(l[i + 2].parse::<i32>().unwrap(), &l[i + 2], None)?;
 
                         if i + 3 < len_l && &l[i + 3] == sep {
                             // Jan-01-99
-                            ymd.append(l[i + 4].parse::<i32>().unwrap(), &l[i + 4], None);
+                            ymd.append(l[i + 4].parse::<i32>().unwrap(), &l[i + 4], None)?;
                             i += 2;
                         }
 
                         i += 2;
-                    } else if (i + 4 < len_l && l[i + 1] == l[i + 3] && l[i + 3] == " "
-                        && self.info.get_pertain(&l[i + 2]))
+                    } else if i + 4 < len_l && l[i + 1] == l[i + 3] && l[i + 3] == " "
+                        && self.info.get_pertain(&l[i + 2])
                     {
                         // Jan of 01
                         if let Some(value) = l[i + 4].parse::<i32>().ok() {
                             let year = self.info.convertyear(value, false);
-                            ymd.append(year, &l[i + 4], Some(YMDLabel::Year));
+                            ymd.append(year, &l[i + 4], Some(YMDLabel::Year))?;
                         }
 
                         i += 4;
@@ -737,7 +726,7 @@ impl Parser {
         if !self.info.validate(&mut res) {
             Err(ParseError::InvalidParseResult(res))
         } else if fuzzy_with_tokens {
-            let skipped_tokens = skipped_idxs.into_iter().map(|i| l[i].clone()).collect();
+            let skipped_tokens = self.recombine_skipped(skipped_idxs, l);
             Ok((res, Some(skipped_tokens)))
         } else {
             Ok((res, None))
@@ -797,7 +786,7 @@ impl Parser {
         };
 
         // TODO: Change month/day to u32
-        let mut d = NaiveDate::from_ymd(
+        let d = NaiveDate::from_ymd(
             y,
             m,
             min(res.day.unwrap_or(default.day() as i32) as u32, days_in_month(y, m as i32)?)
@@ -818,7 +807,7 @@ impl Parser {
 
     fn build_tzaware(
         &self,
-        dt: &NaiveDateTime,
+        _dt: &NaiveDateTime,
         res: &ParsingResult,
         tzinfos: HashMap<String, i32>,
     ) -> ParseResult<Option<FixedOffset>> {
@@ -877,9 +866,9 @@ impl Parser {
             let s = &tokens[idx];
 
             if ymd.len() == 0 && tokens[idx].find(".") == None {
-                ymd.append(s[0..2].parse::<i32>().unwrap(), &s[0..2], None);
-                ymd.append(s[2..4].parse::<i32>().unwrap(), &s[2..4], None);
-                ymd.append(s[4..6].parse::<i32>().unwrap(), &s[4..6], None);
+                ymd.append(s[0..2].parse::<i32>().unwrap(), &s[0..2], None)?;
+                ymd.append(s[2..4].parse::<i32>().unwrap(), &s[2..4], None)?;
+                ymd.append(s[4..6].parse::<i32>().unwrap(), &s[4..6], None)?;
             } else {
                 // 19990101T235959[.59]
                 res.hour = s[0..2].parse::<i32>().ok();
@@ -892,9 +881,9 @@ impl Parser {
         } else if vec![8, 12, 14].contains(&len_li) {
             // YYMMDD
             let s = &tokens[idx];
-            ymd.append(s[..4].parse::<i32>().unwrap(), &s[..4], Some(YMDLabel::Year));
-            ymd.append(s[4..6].parse::<i32>().unwrap(), &s[4..6], None);
-            ymd.append(s[6..8].parse::<i32>().unwrap(), &s[6..8], None);
+            ymd.append(s[..4].parse::<i32>().unwrap(), &s[..4], Some(YMDLabel::Year))?;
+            ymd.append(s[4..6].parse::<i32>().unwrap(), &s[4..6], None)?;
+            ymd.append(s[6..8].parse::<i32>().unwrap(), &s[6..8], None)?;
 
             if len_li > 8 {
                 res.hour = Some(s[8..10].parse::<i32>()?);
@@ -936,20 +925,20 @@ impl Parser {
         {
             // TODO: There's got to be a better way of handling the condition above
             let sep = &tokens[idx + 1];
-            ymd.append(value_repr.parse::<i32>().unwrap(), &value_repr, None);
+            ymd.append(value_repr.parse::<i32>().unwrap(), &value_repr, None)?;
 
             if idx + 2 < len_l && !info.get_jump(&tokens[idx + 2]) {
                 if let Ok(val) = tokens[idx + 2].parse::<i32>() {
-                    ymd.append(val, &tokens[idx + 2], None);
+                    ymd.append(val, &tokens[idx + 2], None)?;
                 } else if let Some(val) = info.get_month(&tokens[idx + 2]) {
-                    ymd.append(val as i32, &tokens[idx + 2], Some(YMDLabel::Month));
+                    ymd.append(val as i32, &tokens[idx + 2], Some(YMDLabel::Month))?;
                 }
 
                 if idx + 3 < len_l && &tokens[idx + 3] == sep {
                     if let Some(value) = info.get_month(&tokens[idx + 4]) {
-                        ymd.append(value as i32, &tokens[idx + 4], Some(YMDLabel::Month));
+                        ymd.append(value as i32, &tokens[idx + 4], Some(YMDLabel::Month))?;
                     } else {
-                        ymd.append(tokens[idx + 4].parse::<i32>().unwrap(), &tokens[idx + 4], None);
+                        ymd.append(tokens[idx + 4].parse::<i32>().unwrap(), &tokens[idx + 4], None)?;
                     }
 
                     idx += 2;
@@ -965,7 +954,7 @@ impl Parser {
                 let ampm = info.get_ampm(&tokens[idx + 2]).unwrap();
                 res.hour = Some(self.adjust_ampm(hour, ampm));
             } else {
-                ymd.append(value.floor().to_i64().unwrap() as i32, &value_repr, None);
+                ymd.append(value.floor().to_i64().unwrap() as i32, &value_repr, None)?;
             }
         } else if info.get_ampm(&tokens[idx + 1]).is_some()
             && (*ZERO <= value && value < *TWENTY_FOUR)
@@ -975,7 +964,7 @@ impl Parser {
             res.hour = Some(self.adjust_ampm(hour, info.get_ampm(&tokens[idx + 1]).unwrap()));
             idx += 1;
         } else if ymd.could_be_day(value.to_i64().unwrap() as i32) {
-            ymd.append(value.to_i64().unwrap() as i32, &value_repr, None);
+            ymd.append(value.to_i64().unwrap() as i32, &value_repr, None)?;
         } else if !fuzzy {
             return Err(ParseInternalError::ValueError("".to_owned()));
         }
@@ -1105,6 +1094,26 @@ impl Parser {
         }
 
         (minute, second)
+    }
+
+    fn recombine_skipped(&self, skipped_idxs: Vec<usize>, tokens: Vec<String>) -> Vec<String> {
+        let mut skipped_tokens: Vec<String> = vec![];
+
+        let mut sorted_idxs = skipped_idxs.clone();
+        sorted_idxs.sort();
+
+        for (i, idx) in sorted_idxs.iter().enumerate() {
+            if i > 0 && idx - 1 == skipped_idxs[i - 1] {
+                // UNWRAP: Having an initial value and unconditional push at end guarantees value
+                let mut t = skipped_tokens.pop().unwrap();
+                t.push_str(tokens[idx.clone()].as_ref());
+                skipped_tokens.push(t);
+            } else {
+                skipped_tokens.push(tokens[idx.clone()].to_owned());
+            }
+        }
+
+        skipped_tokens
     }
 }
 

@@ -201,3 +201,15 @@ fn decimal_split(characters: &str, cast_period: bool) -> Vec<String> {
 
     token_stack
 }
+
+#[cfg(test)]
+mod tests {
+
+    use Tokenizer;
+
+    #[test]
+    fn test_basic() {
+        let tokens: Vec<String> = Tokenizer::new("September of 2003,".to_owned()).collect();
+        assert_eq!(tokens, vec!["September", " ", "of", " ", "2003", ","]);
+    }
+}

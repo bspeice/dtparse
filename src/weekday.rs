@@ -1,5 +1,3 @@
-use std::cmp::max;
-
 use ParseResult;
 use ParseError;
 

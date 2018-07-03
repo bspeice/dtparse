@@ -53,8 +53,8 @@ fn parse_and_assert(
     assert_eq!(pdt.hour, rs_parsed.0.hour(), "Hour mismatch for '{}'", s);
     assert_eq!(pdt.minute, rs_parsed.0.minute(), "Minute mismatch f'or' {}", s);
     assert_eq!(pdt.second, rs_parsed.0.second(), "Second mismatch for '{}'", s);
-    assert_eq!(pdt.micros, rs_parsed.0.timestamp_subsec_micros(), "Microsecond mismatch for {}", s);
-    assert_eq!(pdt.tzo, rs_parsed.1.map(|u| u.local_minus_utc()), "Timezone Offset mismatch for {}", s);
+    assert_eq!(pdt.micros, rs_parsed.0.timestamp_subsec_micros(), "Microsecond mismatch for '{}'", s);
+    assert_eq!(pdt.tzo, rs_parsed.1.map(|u| u.local_minus_utc()), "Timezone Offset mismatch for '{}'", s);
 }
 
 fn parse_and_assert_simple(
@@ -62,14 +62,14 @@ fn parse_and_assert_simple(
     s: &str,
 ) {
     let rs_parsed = dtparse::parse(s).expect(&format!("Unable to parse date in Rust '{}'", s));
-    assert_eq!(pdt.year, rs_parsed.0.year(), "Year mismatch for {}", s);
-    assert_eq!(pdt.month, rs_parsed.0.month(), "Month mismatch for {}", s);
-    assert_eq!(pdt.day, rs_parsed.0.day(), "Day mismatch for {}", s);
-    assert_eq!(pdt.hour, rs_parsed.0.hour(), "Hour mismatch for {}", s);
-    assert_eq!(pdt.minute, rs_parsed.0.minute(), "Minute mismatch for {}", s);
-    assert_eq!(pdt.second, rs_parsed.0.second(), "Second mismatch for {}", s);
-    assert_eq!(pdt.micros, rs_parsed.0.timestamp_subsec_micros(), "Microsecond mismatch for {}", s);
-    assert_eq!(pdt.tzo, rs_parsed.1.map(|u| u.local_minus_utc()), "Timezone Offset mismatch for {}", s);
+    assert_eq!(pdt.year, rs_parsed.0.year(), "Year mismatch for '{}'", s);
+    assert_eq!(pdt.month, rs_parsed.0.month(), "Month mismatch for '{}'", s);
+    assert_eq!(pdt.day, rs_parsed.0.day(), "Day mismatch for '{}'", s);
+    assert_eq!(pdt.hour, rs_parsed.0.hour(), "Hour mismatch for '{}'", s);
+    assert_eq!(pdt.minute, rs_parsed.0.minute(), "Minute mismatch for '{}'", s);
+    assert_eq!(pdt.second, rs_parsed.0.second(), "Second mismatch for '{}'", s);
+    assert_eq!(pdt.micros, rs_parsed.0.timestamp_subsec_micros(), "Microsecond mismatch for '{}'", s);
+    assert_eq!(pdt.tzo, rs_parsed.1.map(|u| u.local_minus_utc()), "Timezone Offset mismatch for '{}'", s);
 }
 
 fn parse_fuzzy_and_assert(
@@ -103,9 +103,9 @@ fn parse_fuzzy_and_assert(
     assert_eq!(pdt.hour, rs_parsed.0.hour(), "Hour mismatch for '{}'", s);
     assert_eq!(pdt.minute, rs_parsed.0.minute(), "Minute mismatch f'or' {}", s);
     assert_eq!(pdt.second, rs_parsed.0.second(), "Second mismatch for '{}'", s);
-    assert_eq!(pdt.micros, rs_parsed.0.timestamp_subsec_micros(), "Microsecond mismatch for {}", s);
-    assert_eq!(pdt.tzo, rs_parsed.1.map(|u| u.local_minus_utc()), "Timezone Offset mismatch for {}", s);
-    assert_eq!(ptokens, rs_parsed.2, "Fuzzy mismatch for {}", s);
+    assert_eq!(pdt.micros, rs_parsed.0.timestamp_subsec_micros(), "Microsecond mismatch for '{}'", s);
+    assert_eq!(pdt.tzo, rs_parsed.1.map(|u| u.local_minus_utc()), "Timezone Offset mismatch for '{}'", s);
+    assert_eq!(ptokens, rs_parsed.2, "Tokens mismatch for '{}'", s);
 }
 
 macro_rules! rs_tzinfo_map {
@@ -1735,7 +1735,7 @@ fn test_parse_ignoretz7() {
 }
 
 #[test]
-fn test_fuzzy0() {
+fn test_fuzzy_tzinfo0() {
     let info = ParserInfo::default();
     let pdt = PyDateTime {
         year: 2003, month: 9, day: 25,
@@ -1743,5 +1743,18 @@ fn test_fuzzy0() {
         micros: 0, tzo: Some(-10800)
     };
     parse_fuzzy_and_assert(pdt, None, info, "Today is 25 of September of 2003, exactly at 10:49:41 with timezone -03:00.", None, None, true, false,
+                           None, false, HashMap::new());
+}
+
+#[test]
+fn test_fuzzy_tokens_tzinfo0() {
+    let info = ParserInfo::default();
+    let pdt = PyDateTime {
+        year: 2003, month: 9, day: 25,
+        hour: 10, minute: 49, second: 41,
+        micros: 0, tzo: Some(-10800)
+    };
+    let tokens = vec!["Today is ".to_owned(), "of ".to_owned(), ", exactly at ".to_owned(), " with timezone ".to_owned(), ".".to_owned()];
+    parse_fuzzy_and_assert(pdt, Some(tokens), info, "Today is 25 of September of 2003, exactly at 10:49:41 with timezone -03:00.", None, None, true, true,
                            None, false, HashMap::new());
 }
