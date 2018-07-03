@@ -1740,7 +1740,7 @@ fn test_fuzzy0() {
     let pdt = PyDateTime {
         year: 2003, month: 9, day: 25,
         hour: 10, minute: 49, second: 41,
-        micros: 0, tzo: None
+        micros: 0, tzo: Some(-10800)
     };
     parse_fuzzy_and_assert(pdt, None, info, "Today is 25 of September of 2003, exactly at 10:49:41 with timezone -03:00.", None, None, true, false,
                            None, false, HashMap::new());

@@ -80,7 +80,7 @@ tests = {
         '1994-11-05T08:15:30Z', '1976-07-04T00:01:02Z',
         'Tue Apr 4 00:22:12 PDT 1995'
     ],
-    'test_fuzzy': [
+    'test_fuzzy_tzinfo': [
         'Today is 25 of September of 2003, exactly at 10:49:41 with timezone -03:00.'
     ],
     'test_parse_default_ignore': [
@@ -153,10 +153,10 @@ def test_parse_default_ignore(i, s):
     return TEST_PARSE_DEFAULT_IGNORE.format(i=i, d=d, s=s)
 
 
-def test_fuzzy(i, s):
+def test_fuzzy_tzinfo(i, s):
     d = parse(s, fuzzy=True)
 
-    return TEST_FUZZY.format(i=i, d=d, s=s)
+    return TEST_FUZZY_TZINFO.format(i=i, d=d, s=s, offset=int(d.tzinfo._offset.total_seconds()))
 
 # Here lies all the ugly junk.
 TEST_HEADER = '''
@@ -409,14 +409,14 @@ fn test_parse_default_ignore{i}() {{
                      Some(default_rsdate), false, HashMap::new());
 }}\n'''
 
-TEST_FUZZY = '''
+TEST_FUZZY_TZINFO = '''
 #[test]
 fn test_fuzzy{i}() {{
     let info = ParserInfo::default();
     let pdt = PyDateTime {{
         year: {d.year}, month: {d.month}, day: {d.day},
         hour: {d.hour}, minute: {d.minute}, second: {d.second},
-        micros: {d.microsecond}, tzo: None
+        micros: {d.microsecond}, tzo: Some({offset})
     }};
     parse_fuzzy_and_assert(pdt, None, info, "{s}", None, None, true, false,
                            None, false, HashMap::new());

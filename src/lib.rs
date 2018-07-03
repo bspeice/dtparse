@@ -718,7 +718,7 @@ impl Parser {
                 }
 
                 i += 1;
-            } else if !self.info.get_jump(&l[i]) || fuzzy {
+            } else if !(self.info.get_jump(&l[i]) || fuzzy) {
                 return Err(ParseError::UnrecognizedToken(l[i].clone()));
             } else {
                 skipped_idxs.push(i);
