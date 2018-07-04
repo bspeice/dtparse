@@ -74,13 +74,12 @@ impl From<ParseIntError> for ParseInternalError {
 pub enum ParseError {
     AmbiguousWeekday,
     InternalError(ParseInternalError),
-    InvalidDay,
     InvalidMonth,
     UnrecognizedToken(String),
     InvalidParseResult(ParsingResult),
     AmPmWithoutHour,
-    InvalidHour,
     TimezoneUnsupported,
+    ImpossibleTimestamp(&'static str),
 }
 
 impl From<ParseInternalError> for ParseError {
@@ -774,7 +773,7 @@ impl Parser {
             if fuzzy {
                 Ok(false)
             } else {
-                Err(ParseError::InvalidHour)
+                Err(ParseError::ImpossibleTimestamp("Invalid hour"))
             }
         } else {
             Ok(false)
@@ -806,13 +805,24 @@ impl Parser {
 
         let d = d + d_offset;
 
-        let t = NaiveTime::from_hms_micro(
-            res.hour.unwrap_or(default.hour() as i32) as u32,
-            res.minute.unwrap_or(default.minute() as i32) as u32,
-            res.second.unwrap_or(default.second() as i32) as u32,
-            res.microsecond
-                .unwrap_or(default.timestamp_subsec_micros() as i32) as u32,
-        );
+        let hour = res.hour.unwrap_or(default.hour() as i32) as u32;
+        let minute = res.minute.unwrap_or(default.minute() as i32) as u32;
+        let second = res.second.unwrap_or(default.second() as i32) as u32;
+        let microsecond = res.microsecond
+            .unwrap_or(default.timestamp_subsec_micros() as i32) as u32;
+        let t = NaiveTime::from_hms_micro_opt(hour, minute, second, microsecond).ok_or_else(|| {
+            if hour >= 24 {
+                ParseError::ImpossibleTimestamp("Invalid hour")
+            } else if minute >= 60 {
+                ParseError::ImpossibleTimestamp("Invalid minute")
+            } else if second >= 60 {
+                ParseError::ImpossibleTimestamp("Invalid second")
+            } else if microsecond >= 2_000_000 {
+                ParseError::ImpossibleTimestamp("Invalid microsecond")
+            } else {
+                unreachable!();
+            }
+        })?;
 
         Ok(NaiveDateTime::new(d, t))
     }
