@@ -953,9 +953,12 @@ impl Parser {
                 let hour = value.to_i64().unwrap() as i32;
                 let ampm = info.get_ampm(&tokens[idx + 2]).unwrap();
                 res.hour = Some(self.adjust_ampm(hour, ampm));
+                idx += 1;
             } else {
                 ymd.append(value.floor().to_i64().unwrap() as i32, &value_repr, None)?;
             }
+
+            idx += 1;
         } else if info.get_ampm(&tokens[idx + 1]).is_some()
             && (*ZERO <= value && value < *TWENTY_FOUR)
         {
@@ -1098,6 +1101,7 @@ impl Parser {
 
     fn recombine_skipped(&self, skipped_idxs: Vec<usize>, tokens: Vec<String>) -> Vec<String> {
         let mut skipped_tokens: Vec<String> = vec![];
+        println!("idxs: {:?}, tokens: {:?}", skipped_idxs, tokens);
 
         let mut sorted_idxs = skipped_idxs.clone();
         sorted_idxs.sort();
