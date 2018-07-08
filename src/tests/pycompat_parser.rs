@@ -1757,3 +1757,75 @@ fn test_fuzzy_tokens_tzinfo0() {
     parse_fuzzy_and_assert(pdt, Some(tokens), info, "Today is 25 of September of 2003, exactly at 10:49:41 with timezone -03:00.", None, None, true, true,
                            None, false, HashMap::new());
 }
+
+#[test]
+fn test_fuzzy_simple0() {
+    let info = ParserInfo::default();
+    let pdt = PyDateTime {
+        year: 1974, month: 3, day: 1,
+        hour: 0, minute: 0, second: 0,
+        micros: 0, tzo: None
+    };
+    parse_fuzzy_and_assert(pdt, None, info, "I have a meeting on March 1, 1974", None, None, true, false,
+                           None, false, HashMap::new());
+}
+
+#[test]
+fn test_fuzzy_simple1() {
+    let info = ParserInfo::default();
+    let pdt = PyDateTime {
+        year: 2020, month: 6, day: 8,
+        hour: 0, minute: 0, second: 0,
+        micros: 0, tzo: None
+    };
+    parse_fuzzy_and_assert(pdt, None, info, "On June 8th, 2020, I am going to be the first man on Mars", None, None, true, false,
+                           None, false, HashMap::new());
+}
+
+#[test]
+fn test_fuzzy_simple2() {
+    let info = ParserInfo::default();
+    let pdt = PyDateTime {
+        year: 2003, month: 12, day: 3,
+        hour: 3, minute: 0, second: 0,
+        micros: 0, tzo: None
+    };
+    parse_fuzzy_and_assert(pdt, None, info, "Meet me at the AM/PM on Sunset at 3:00 AM on December 3rd, 2003", None, None, true, false,
+                           None, false, HashMap::new());
+}
+
+#[test]
+fn test_fuzzy_simple3() {
+    let info = ParserInfo::default();
+    let pdt = PyDateTime {
+        year: 2003, month: 12, day: 3,
+        hour: 3, minute: 0, second: 0,
+        micros: 0, tzo: None
+    };
+    parse_fuzzy_and_assert(pdt, None, info, "Meet me at 3:00 AM on December 3rd, 2003 at the AM/PM on Sunset", None, None, true, false,
+                           None, false, HashMap::new());
+}
+
+#[test]
+fn test_fuzzy_simple4() {
+    let info = ParserInfo::default();
+    let pdt = PyDateTime {
+        year: 1945, month: 1, day: 29,
+        hour: 14, minute: 45, second: 0,
+        micros: 0, tzo: None
+    };
+    parse_fuzzy_and_assert(pdt, None, info, "Jan 29, 1945 14:45 AM I going to see you there?", None, None, true, false,
+                           None, false, HashMap::new());
+}
+
+#[test]
+fn test_fuzzy_simple5() {
+    let info = ParserInfo::default();
+    let pdt = PyDateTime {
+        year: 2017, month: 7, day: 17,
+        hour: 6, minute: 15, second: 0,
+        micros: 0, tzo: None
+    };
+    parse_fuzzy_and_assert(pdt, None, info, "2017-07-17 06:15:", None, None, true, false,
+                           None, false, HashMap::new());
+}

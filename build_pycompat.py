@@ -86,6 +86,14 @@ tests = {
     'test_fuzzy_tokens_tzinfo': [
         'Today is 25 of September of 2003, exactly at 10:49:41 with timezone -03:00.'
     ],
+    'test_fuzzy_simple': [
+        'I have a meeting on March 1, 1974', # testFuzzyAMPMProblem
+        'On June 8th, 2020, I am going to be the first man on Mars', # testFuzzyAMPMProblem
+        'Meet me at the AM/PM on Sunset at 3:00 AM on December 3rd, 2003', # testFuzzyAMPMProblem
+        'Meet me at 3:00 AM on December 3rd, 2003 at the AM/PM on Sunset', # testFuzzyAMPMProblem
+        'Jan 29, 1945 14:45 AM I going to see you there?', # testFuzzyIgnoreAMPM
+        '2017-07-17 06:15:', # test_idx_check
+    ],
     'test_parse_default_ignore': [
     ],
 }
@@ -171,6 +179,13 @@ def test_fuzzy_tokens_tzinfo(i, s):
         i=i, d=d, s=s, offset=int(d.tzinfo._offset.total_seconds()),
         tokens=r_tokens
     )
+
+
+def test_fuzzy_simple(i, s):
+    d = parse(s, fuzzy=True)
+
+    return TEST_FUZZY_SIMPLE.format(i=i, d=d, s=s)
+
 
 # Here lies all the ugly junk.
 TEST_HEADER = '''
@@ -446,6 +461,19 @@ fn test_fuzzy_tokens_tzinfo{i}() {{
     }};
     let tokens = vec![{tokens}];
     parse_fuzzy_and_assert(pdt, Some(tokens), info, "{s}", None, None, true, true,
+                           None, false, HashMap::new());
+}}\n'''
+
+TEST_FUZZY_SIMPLE = '''
+#[test]
+fn test_fuzzy_simple{i}() {{
+    let info = ParserInfo::default();
+    let pdt = PyDateTime {{
+        year: {d.year}, month: {d.month}, day: {d.day},
+        hour: {d.hour}, minute: {d.minute}, second: {d.second},
+        micros: {d.microsecond}, tzo: None
+    }};
+    parse_fuzzy_and_assert(pdt, None, info, "{s}", None, None, true, false,
                            None, false, HashMap::new());
 }}\n'''
 
