@@ -7,10 +7,9 @@ use chrono::NaiveDateTime;
 use chrono::Timelike;
 use std::collections::HashMap;
 
-extern crate dtparse;
-
-use dtparse::Parser;
-use dtparse::ParserInfo;
+use Parser;
+use ParserInfo;
+use parse;
 
 struct PyDateTime {
     year: i32,
@@ -61,7 +60,7 @@ fn parse_and_assert_simple(
     pdt: PyDateTime,
     s: &str,
 ) {
-    let rs_parsed = dtparse::parse(s).expect(&format!("Unable to parse date in Rust '{}'", s));
+    let rs_parsed = parse(s).expect(&format!("Unable to parse date in Rust '{}'", s));
     assert_eq!(pdt.year, rs_parsed.0.year(), "Year mismatch for '{}'", s);
     assert_eq!(pdt.month, rs_parsed.0.month(), "Month mismatch for '{}'", s);
     assert_eq!(pdt.day, rs_parsed.0.day(), "Day mismatch for '{}'", s);

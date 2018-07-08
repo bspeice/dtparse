@@ -99,6 +99,8 @@ pub fn day_of_week(year: u32, month: u32, day: u32) -> ParseResult<DayOfWeek> {
     }
 }
 
+// Rust warns about unused imports here, but they're definitely used.
+#[allow(unused_imports)]
 mod test {
 
     use weekday::day_of_week;
