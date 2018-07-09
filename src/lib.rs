@@ -196,7 +196,9 @@ impl ParserInfo {
 
     fn get_ampm(&self, name: &str) -> Option<bool> {
         if let Some(v) = self.ampm.get(&name.to_lowercase()) {
-            Some(v.to_owned() == 1)
+            // Python technically uses numbers here, but given that the numbers are
+            // only 0 and 1, it's easier to use booleans
+            Some(*v == 1)
         } else {
             None
         }
@@ -639,7 +641,7 @@ impl Parser {
                 let is_ampm = self.ampm_valid(res.hour, res.ampm, fuzzy);
 
                 if is_ampm.is_ok() {
-                    res.hour = Some(self.adjust_ampm(res.hour.unwrap(), value));
+                    res.hour = res.hour.map(|h| self.adjust_ampm(h, value));
                     res.ampm = Some(value);
                 } else if fuzzy {
                     skipped_idxs.push(i);
