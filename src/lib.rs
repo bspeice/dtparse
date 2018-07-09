@@ -640,7 +640,7 @@ impl Parser {
             } else if let Some(value) = self.info.get_ampm(&l[i]) {
                 let is_ampm = self.ampm_valid(res.hour, res.ampm, fuzzy);
 
-                if is_ampm.is_ok() {
+                if is_ampm == Ok(true) {
                     res.hour = res.hour.map(|h| self.adjust_ampm(h, value));
                     res.ampm = Some(value);
                 } else if fuzzy {
@@ -750,25 +750,27 @@ impl Parser {
     }
 
     fn ampm_valid(&self, hour: Option<i32>, ampm: Option<bool>, fuzzy: bool) -> ParseResult<bool> {
-        if fuzzy && ampm == Some(true) {
-            return Ok(false);
+        let mut val_is_ampm = true;
+
+        if fuzzy && ampm.is_some() {
+            val_is_ampm = false;
         }
 
         if hour.is_none() {
             if fuzzy {
-                Ok(false)
+                val_is_ampm = false;
             } else {
-                Err(ParseError::AmPmWithoutHour)
+                return Err(ParseError::AmPmWithoutHour);
             }
         } else if !(0 <= hour.unwrap() && hour.unwrap() <= 12) {
             if fuzzy {
-                Ok(false)
+                val_is_ampm = false;
             } else {
-                Err(ParseError::InvalidHour)
+                return Err(ParseError::InvalidHour);
             }
-        } else {
-            Ok(false)
         }
+
+        Ok(val_is_ampm)
     }
 
     fn build_naive(&self, res: &ParsingResult, default: &NaiveDateTime) -> ParseResult<NaiveDateTime> {
@@ -1103,7 +1105,6 @@ impl Parser {
 
     fn recombine_skipped(&self, skipped_idxs: Vec<usize>, tokens: Vec<String>) -> Vec<String> {
         let mut skipped_tokens: Vec<String> = vec![];
-        println!("idxs: {:?}, tokens: {:?}", skipped_idxs, tokens);
 
         let mut sorted_idxs = skipped_idxs.clone();
         sorted_idxs.sort();
