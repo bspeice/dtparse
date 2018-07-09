@@ -80,12 +80,26 @@ tests = {
         '1994-11-05T08:15:30Z', '1976-07-04T00:01:02Z',
         'Tue Apr 4 00:22:12 PDT 1995'
     ],
+    'test_fuzzy_tzinfo': [
+        'Today is 25 of September of 2003, exactly at 10:49:41 with timezone -03:00.'
+    ],
+    'test_fuzzy_tokens_tzinfo': [
+        'Today is 25 of September of 2003, exactly at 10:49:41 with timezone -03:00.'
+    ],
+    'test_fuzzy_simple': [
+        'I have a meeting on March 1, 1974', # testFuzzyAMPMProblem
+        'On June 8th, 2020, I am going to be the first man on Mars', # testFuzzyAMPMProblem
+        'Meet me at the AM/PM on Sunset at 3:00 AM on December 3rd, 2003', # testFuzzyAMPMProblem
+        'Meet me at 3:00 AM on December 3rd, 2003 at the AM/PM on Sunset', # testFuzzyAMPMProblem
+        'Jan 29, 1945 14:45 AM I going to see you there?', # testFuzzyIgnoreAMPM
+        '2017-07-17 06:15:', # test_idx_check
+    ],
     'test_parse_default_ignore': [
     ],
 }
 
 def main():
-    with open('tests/pycompat.rs', 'w+') as handle:
+    with open('src/tests/pycompat_parser.rs', 'w+') as handle:
         handle.write(TEST_HEADER)
 
         for test_name, test_strings in tests.items():
@@ -149,6 +163,30 @@ def test_parse_default_ignore(i, s):
 
     return TEST_PARSE_DEFAULT_IGNORE.format(i=i, d=d, s=s)
 
+
+def test_fuzzy_tzinfo(i, s):
+    d = parse(s, fuzzy=True)
+
+    return TEST_FUZZY_TZINFO.format(i=i, d=d, s=s, offset=int(d.tzinfo._offset.total_seconds()))
+
+
+def test_fuzzy_tokens_tzinfo(i, s):
+    d, tokens = parse(s, fuzzy_with_tokens=True)
+
+    r_tokens = ", ".join(list(map(lambda s: f'"{s}".to_owned()', tokens)))
+
+    return TEST_FUZZY_TOKENS_TZINFO.format(
+        i=i, d=d, s=s, offset=int(d.tzinfo._offset.total_seconds()),
+        tokens=r_tokens
+    )
+
+
+def test_fuzzy_simple(i, s):
+    d = parse(s, fuzzy=True)
+
+    return TEST_FUZZY_SIMPLE.format(i=i, d=d, s=s)
+
+
 # Here lies all the ugly junk.
 TEST_HEADER = '''
 extern crate chrono;
@@ -159,10 +197,9 @@ use chrono::NaiveDateTime;
 use chrono::Timelike;
 use std::collections::HashMap;
 
-extern crate dtparse;
-
-use dtparse::Parser;
-use dtparse::ParserInfo;
+use Parser;
+use ParserInfo;
+use parse;
 
 struct PyDateTime {
     year: i32,
@@ -205,23 +242,59 @@ fn parse_and_assert(
     assert_eq!(pdt.hour, rs_parsed.0.hour(), "Hour mismatch for '{}'", s);
     assert_eq!(pdt.minute, rs_parsed.0.minute(), "Minute mismatch f'or' {}", s);
     assert_eq!(pdt.second, rs_parsed.0.second(), "Second mismatch for '{}'", s);
-    assert_eq!(pdt.micros, rs_parsed.0.timestamp_subsec_micros(), "Microsecond mismatch for {}", s);
-    assert_eq!(pdt.tzo, rs_parsed.1.map(|u| u.local_minus_utc()), "Timezone Offset mismatch for {}", s);
+    assert_eq!(pdt.micros, rs_parsed.0.timestamp_subsec_micros(), "Microsecond mismatch for '{}'", s);
+    assert_eq!(pdt.tzo, rs_parsed.1.map(|u| u.local_minus_utc()), "Timezone Offset mismatch for '{}'", s);
 }
 
 fn parse_and_assert_simple(
     pdt: PyDateTime,
     s: &str,
 ) {
-    let rs_parsed = dtparse::parse(s).expect(&format!("Unable to parse date in Rust '{}'", s));
-    assert_eq!(pdt.year, rs_parsed.0.year(), "Year mismatch for {}", s);
-    assert_eq!(pdt.month, rs_parsed.0.month(), "Month mismatch for {}", s);
-    assert_eq!(pdt.day, rs_parsed.0.day(), "Day mismatch for {}", s);
-    assert_eq!(pdt.hour, rs_parsed.0.hour(), "Hour mismatch for {}", s);
-    assert_eq!(pdt.minute, rs_parsed.0.minute(), "Minute mismatch for {}", s);
-    assert_eq!(pdt.second, rs_parsed.0.second(), "Second mismatch for {}", s);
-    assert_eq!(pdt.micros, rs_parsed.0.timestamp_subsec_micros(), "Microsecond mismatch for {}", s);
-    assert_eq!(pdt.tzo, rs_parsed.1.map(|u| u.local_minus_utc()), "Timezone Offset mismatch for {}", s);
+    let rs_parsed = parse(s).expect(&format!("Unable to parse date in Rust '{}'", s));
+    assert_eq!(pdt.year, rs_parsed.0.year(), "Year mismatch for '{}'", s);
+    assert_eq!(pdt.month, rs_parsed.0.month(), "Month mismatch for '{}'", s);
+    assert_eq!(pdt.day, rs_parsed.0.day(), "Day mismatch for '{}'", s);
+    assert_eq!(pdt.hour, rs_parsed.0.hour(), "Hour mismatch for '{}'", s);
+    assert_eq!(pdt.minute, rs_parsed.0.minute(), "Minute mismatch for '{}'", s);
+    assert_eq!(pdt.second, rs_parsed.0.second(), "Second mismatch for '{}'", s);
+    assert_eq!(pdt.micros, rs_parsed.0.timestamp_subsec_micros(), "Microsecond mismatch for '{}'", s);
+    assert_eq!(pdt.tzo, rs_parsed.1.map(|u| u.local_minus_utc()), "Timezone Offset mismatch for '{}'", s);
+}
+
+fn parse_fuzzy_and_assert(
+    pdt: PyDateTime,
+    ptokens: Option<Vec<String>>,
+    info: ParserInfo,
+    s: &str,
+    dayfirst: Option<bool>,
+    yearfirst: Option<bool>,
+    fuzzy: bool,
+    fuzzy_with_tokens: bool,
+    default: Option<&NaiveDateTime>,
+    ignoretz: bool,
+    tzinfos: HashMap<String, i32>,
+) {
+
+    let mut parser = Parser::new(info);
+    let rs_parsed = parser.parse(
+        s,
+        dayfirst,
+        yearfirst,
+        fuzzy,
+        fuzzy_with_tokens,
+        default,
+        ignoretz,
+        tzinfos).expect(&format!("Unable to parse date in Rust '{}'", s));
+
+    assert_eq!(pdt.year, rs_parsed.0.year(), "Year mismatch for '{}'", s);
+    assert_eq!(pdt.month, rs_parsed.0.month(), "Month mismatch for '{}'", s);
+    assert_eq!(pdt.day, rs_parsed.0.day(), "Day mismatch for '{}'", s);
+    assert_eq!(pdt.hour, rs_parsed.0.hour(), "Hour mismatch for '{}'", s);
+    assert_eq!(pdt.minute, rs_parsed.0.minute(), "Minute mismatch f'or' {}", s);
+    assert_eq!(pdt.second, rs_parsed.0.second(), "Second mismatch for '{}'", s);
+    assert_eq!(pdt.micros, rs_parsed.0.timestamp_subsec_micros(), "Microsecond mismatch for '{}'", s);
+    assert_eq!(pdt.tzo, rs_parsed.1.map(|u| u.local_minus_utc()), "Timezone Offset mismatch for '{}'", s);
+    assert_eq!(ptokens, rs_parsed.2, "Tokens mismatch for '{}'", s);
 }
 
 macro_rules! rs_tzinfo_map {
@@ -362,6 +435,46 @@ fn test_parse_default_ignore{i}() {{
     }};
     parse_and_assert(pdt, info, "{s}", None, None, false, false,
                      Some(default_rsdate), false, HashMap::new());
+}}\n'''
+
+TEST_FUZZY_TZINFO = '''
+#[test]
+fn test_fuzzy_tzinfo{i}() {{
+    let info = ParserInfo::default();
+    let pdt = PyDateTime {{
+        year: {d.year}, month: {d.month}, day: {d.day},
+        hour: {d.hour}, minute: {d.minute}, second: {d.second},
+        micros: {d.microsecond}, tzo: Some({offset})
+    }};
+    parse_fuzzy_and_assert(pdt, None, info, "{s}", None, None, true, false,
+                           None, false, HashMap::new());
+}}\n'''
+
+TEST_FUZZY_TOKENS_TZINFO = '''
+#[test]
+fn test_fuzzy_tokens_tzinfo{i}() {{
+    let info = ParserInfo::default();
+    let pdt = PyDateTime {{
+        year: {d.year}, month: {d.month}, day: {d.day},
+        hour: {d.hour}, minute: {d.minute}, second: {d.second},
+        micros: {d.microsecond}, tzo: Some({offset})
+    }};
+    let tokens = vec![{tokens}];
+    parse_fuzzy_and_assert(pdt, Some(tokens), info, "{s}", None, None, true, true,
+                           None, false, HashMap::new());
+}}\n'''
+
+TEST_FUZZY_SIMPLE = '''
+#[test]
+fn test_fuzzy_simple{i}() {{
+    let info = ParserInfo::default();
+    let pdt = PyDateTime {{
+        year: {d.year}, month: {d.month}, day: {d.day},
+        hour: {d.hour}, minute: {d.minute}, second: {d.second},
+        micros: {d.microsecond}, tzo: None
+    }};
+    parse_fuzzy_and_assert(pdt, None, info, "{s}", None, None, true, false,
+                           None, false, HashMap::new());
 }}\n'''
 
 

@@ -1,5 +1,6 @@
 pub(crate) struct Tokenizer {
     token_stack: Vec<String>,
+    // TODO: Should this be more generic? io::Read for example?
     parse_string: String,
 }
 
@@ -13,11 +14,48 @@ pub(crate) enum ParseState {
 }
 
 impl Tokenizer {
-    pub(crate) fn new(parse_string: String) -> Self {
+
+    pub(crate) fn new(parse_string: &str) -> Self {
         Tokenizer {
-            token_stack: Vec::new(),
+            token_stack: vec![],
             parse_string: parse_string.chars().rev().collect(),
         }
+    }
+
+    fn isword(&self, c: char) -> bool {
+        c.is_alphabetic()
+    }
+
+    fn isnum(&self, c: char) -> bool {
+        c.is_numeric()
+    }
+
+    fn isspace(&self, c: char) -> bool {
+        c.is_whitespace()
+    }
+
+    fn decimal_split(&self, s: &str) -> Vec<String> {
+        // Handles the same thing as Python's re.split()
+        let mut tokens: Vec<String> = vec!["".to_owned()];
+
+        for c in s.chars() {
+            if c == '.' || c == ',' {
+                tokens.push(c.to_string());
+                tokens.push("".to_owned());
+            } else {
+                // UNWRAP: Initial setup guarantees we always have an item
+                let mut t = tokens.pop().unwrap();
+                t.push(c);
+                tokens.push(t);
+            }
+        }
+
+        // TODO: Do I really have to use &String instead of &str?
+        if tokens.last() == Some(&"".to_owned()) {
+            tokens.pop();
+        }
+
+        tokens
     }
 }
 
@@ -26,178 +64,123 @@ impl Iterator for Tokenizer {
 
     fn next(&mut self) -> Option<Self::Item> {
         if !self.token_stack.is_empty() {
-            return Some(self.token_stack.pop().unwrap());
-        };
-        if self.parse_string.is_empty() {
-            return None;
-        };
+            return Some(self.token_stack.remove(0));
+        }
 
-        let mut char_stack: Vec<char> = Vec::new();
-        let mut seen_letters = false;
+        let mut seenletters = false;
+        let mut token: Option<String> = None;
         let mut state = ParseState::Empty;
 
-        while let Some(next) = self.parse_string.pop() {
+        while !self.parse_string.is_empty() {
+            // Dateutil uses a separate `charstack` to manage the incoming stream.
+            // Because parse_string can have things pushed back onto it, we skip
+            // a couple of steps related to the `charstack`.
+
+            // UNWRAP: Just checked that parse_string isn't empty
+            let nextchar = self.parse_string.pop().unwrap();
+
             match state {
                 ParseState::Empty => {
-                    if next.is_numeric() {
-                        state = ParseState::Numeric;
-                        char_stack.push(next);
-                    } else if next.is_alphabetic() {
+                    token = Some(nextchar.to_string());
+                    if self.isword(nextchar) {
                         state = ParseState::Alpha;
-                        seen_letters = true;
-                        char_stack.push(next);
-                    } else if next.is_whitespace() {
-                        char_stack.push(' ');
+                    } else if self.isnum(nextchar) {
+                        state = ParseState::Numeric;
+                    } else if self.isspace(nextchar) {
+                        token = Some(" ".to_owned());
                         break;
                     } else {
-                        char_stack.push(next);
                         break;
                     }
-                }
+                },
                 ParseState::Alpha => {
-                    if next.is_alphabetic() {
-                        char_stack.push(next);
-                    } else if next == '.' {
+                    seenletters = true;
+                    if self.isword(nextchar) {
+                        // UNWRAP: Because we're in non-empty parse state, we're guaranteed to have a token
+                        token.as_mut().unwrap().push(nextchar);
+                    } else if nextchar == '.' {
+                        token.as_mut().unwrap().push(nextchar);
                         state = ParseState::AlphaDecimal;
-                        char_stack.push(next);
                     } else {
-                        // We don't recognize the character, so push it back
-                        // to be handled later.
-                        self.parse_string.push(next);
+                        self.parse_string.push(nextchar);
                         break;
                     }
-                }
-                ParseState::AlphaDecimal => {
-                    if next == '.' || next.is_alphabetic() {
-                        char_stack.push(next);
-                    } else if next.is_numeric() && char_stack.last().unwrap().clone() == '.' {
-                        char_stack.push(next);
-                        state = ParseState::NumericDecimal;
-                    } else {
-                        self.parse_string.push(next);
-                        break;
-                    }
-                }
+                },
                 ParseState::Numeric => {
-                    if next.is_numeric() {
-                        char_stack.push(next);
-                    } else if next == '.' || (next == ',' && char_stack.len() >= 2) {
-                        char_stack.push(next);
+                    if self.isnum(nextchar) {
+                        // UNWRAP: Because we're in non-empty parse state, we're guaranteed to have a token
+                        token.as_mut().unwrap().push(nextchar);
+                    } else if nextchar == '.' || (nextchar == ',' && token.as_ref().unwrap().len() >= 2) {
+                        token.as_mut().unwrap().push(nextchar);
                         state = ParseState::NumericDecimal;
                     } else {
-                        // We don't recognize the character, so push it back
-                        // to be handled later
-                        self.parse_string.push(next);
+                        self.parse_string.push(nextchar);
                         break;
                     }
-                }
+                },
+                ParseState::AlphaDecimal => {
+                    seenletters = true;
+                    if nextchar == '.' || self.isword(nextchar) {
+                        // UNWRAP: Because we're in non-empty parse state, we're guaranteed to have a token
+                        token.as_mut().unwrap().push(nextchar);
+                    } else if self.isnum(nextchar) && token.as_ref().unwrap().chars().last() == Some('.') {
+                        token.as_mut().unwrap().push(nextchar);
+                        state = ParseState::NumericDecimal;
+                    } else {
+                        self.parse_string.push(nextchar);
+                        break;
+                    }
+                },
                 ParseState::NumericDecimal => {
-                    if next == '.' || next.is_numeric() {
-                        char_stack.push(next);
-                    } else if next.is_alphabetic() && char_stack.last().unwrap().clone() == '.' {
-                        char_stack.push(next);
+                    if nextchar == '.' || self.isnum(nextchar) {
+                        // UNWRAP: Because we're in non-empty parse state, we're guaranteed to have a token
+                        token.as_mut().unwrap().push(nextchar);
+                    } else if self.isword(nextchar) && token.as_ref().unwrap().chars().last() == Some('.') {
+                        token.as_mut().unwrap().push(nextchar);
                         state = ParseState::AlphaDecimal;
                     } else {
-                        self.parse_string.push(next);
+                        self.parse_string.push(nextchar);
                         break;
                     }
                 }
             }
         }
 
-        // I like Python's version of this much better:
-        // needs_split = seen_letters or char_stack.count('.') > 1 or char_stack[-1] in '.,'
-        let dot_count = char_stack.iter().fold(0, |count, character| {
-            count + (if character == &'.' { 1 } else { 0 })
-        });
-        let needs_split = seen_letters || dot_count > 1 || char_stack.last().unwrap() == &'.'
-            || char_stack.last().unwrap() == &',';
-        let final_string: String = char_stack.into_iter().collect();
-
-        let mut tokens = match state {
-            ParseState::Empty => vec![final_string],
-            ParseState::Alpha => vec![final_string],
-            ParseState::Numeric => vec![final_string],
-            ParseState::AlphaDecimal => {
-                if needs_split {
-                    decimal_split(&final_string, false)
-                } else {
-                    vec![final_string]
+        // Python uses the state to short-circuit and make sure it doesn't run into issues with None
+        // We do something slightly different to express the same logic
+        if state == ParseState::AlphaDecimal || state == ParseState::NumericDecimal {
+            // UNWRAP: The state check guarantees that we have a value
+            let dot_count = token.as_ref().unwrap().chars().filter(|c| *c == '.').count();
+            let last_char = token.as_ref().unwrap().chars().last();
+            let last_splittable = last_char == Some('.') || last_char == Some(',');
+    
+            if seenletters || dot_count > 1 || last_splittable {
+                let mut l = self.decimal_split(token.as_ref().unwrap());
+                let remaining = l.split_off(1);
+    
+                token = Some(l[0].clone());
+                for t in remaining {
+                    self.token_stack.push(t);
                 }
             }
-            ParseState::NumericDecimal => {
-                if needs_split {
-                    decimal_split(&final_string, dot_count == 0)
-                } else {
-                    vec![final_string]
-                }
+    
+            if state == ParseState::NumericDecimal && dot_count == 0 {
+                token = Some(token.unwrap().replace(',', "."));
             }
-        }.into_iter()
-            .rev()
-            .collect();
-
-        self.token_stack.append(&mut tokens);
-        // UNWRAP: Previous match guaranteed that at least one token was added
-        let token = self.token_stack.pop().unwrap();
-        if state == ParseState::NumericDecimal && !token.contains(".") {
-            Some(token.replace(",", "."))
-        } else {
-            Some(token)
         }
+
+        token
     }
 }
 
-fn decimal_split(characters: &str, cast_period: bool) -> Vec<String> {
-    let mut token_stack: Vec<String> = Vec::new();
-    let mut char_stack: Vec<char> = Vec::new();
-    let mut state = ParseState::Empty;
+#[cfg(test)]
+mod tests {
 
-    for c in characters.chars() {
-        match state {
-            ParseState::Empty => {
-                if c.is_alphabetic() {
-                    char_stack.push(c);
-                    state = ParseState::Alpha;
-                } else if c.is_numeric() {
-                    char_stack.push(c);
-                    state = ParseState::Numeric;
-                } else {
-                    let character = if cast_period { '.' } else { c };
-                    token_stack.push(character.to_string());
-                }
-            }
-            ParseState::Alpha => {
-                if c.is_alphabetic() {
-                    char_stack.push(c);
-                } else {
-                    token_stack.push(char_stack.iter().collect());
-                    char_stack.clear();
-                    let character = if cast_period { '.' } else { c };
-                    token_stack.push(character.to_string());
-                    state = ParseState::Empty;
-                }
-            }
-            ParseState::Numeric => {
-                if c.is_numeric() {
-                    char_stack.push(c);
-                } else {
-                    token_stack.push(char_stack.iter().collect());
-                    char_stack.clear();
-                    let character = if cast_period { '.' } else { c };
-                    token_stack.push(character.to_string());
-                    state = ParseState::Empty;
-                }
-            }
-            _ => panic!("Invalid parse state during decimal_split()"),
-        }
+    use Tokenizer;
+
+    #[test]
+    fn test_basic() {
+        let tokens: Vec<String> = Tokenizer::new("September of 2003,").collect();
+        assert_eq!(tokens, vec!["September", " ", "of", " ", "2003", ","]);
     }
-
-    match state {
-        ParseState::Alpha => token_stack.push(char_stack.iter().collect()),
-        ParseState::Numeric => token_stack.push(char_stack.iter().collect()),
-        ParseState::Empty => (),
-        _ => panic!("Invalid parse state during decimal_split()"),
-    }
-
-    token_stack
 }

@@ -17,8 +17,8 @@ Supported in v0.8
 theoretically would provide support, but I'd also like some helper things available (e.g. "EST" is not a named zone in `chrono-tz`).
 Explicit time zones (i.e. "00:00:00 -0300") are working as expected.
 
-3. "Fuzzy" and "Fuzzy with tokens" modes haven't been tested. The code should work, but I need to get the
-test cases added to the auto-generation suite
+3. ~~"Fuzzy" and "Fuzzy with tokens" modes haven't been tested. The code should work, but I need to get the
+test cases added to the auto-generation suite~~
 
 **Non-functional**: This library is intended to be a direct port from Python, and thus the code
 looks a lot more like Python than it does Rust. There are a ton of `TODO` comments in the code
