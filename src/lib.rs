@@ -1068,7 +1068,6 @@ impl Parser {
         if hms == 0 {
             res.hour = Some(value.to_i64().unwrap() as i32);
             if !close_to_integer(&value) {
-                // TODO: High probability of issues with rounding here.
                 res.minute = Some((*SIXTY * (value % *ONE)).to_i64().unwrap() as i32);
             }
         } else if hms == 1 {
@@ -1088,6 +1087,7 @@ impl Parser {
     }
 
     fn parse_min_sec(&self, value: Decimal) -> (i32, Option<i32>) {
+        // UNWRAP: i64 guaranteed to be fine because of preceding floor
         let minute = value.floor().to_i64().unwrap() as i32;
         let mut second = None;
 

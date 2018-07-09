@@ -863,3 +863,39 @@ fn test_tokenize142() {
     let comp = vec!["Today", " ", "is", " ", "25", " ", "of", " ", "September", " ", "of", " ", "2003", ",", " ", "exactly", " ", "at", " ", "10", ":", "49", ":", "41", " ", "with", " ", "timezone", " ", "-", "03", ":", "00", "."];
     tokenize_assert("Today is 25 of September of 2003, exactly at 10:49:41 with timezone -03:00.", comp);
 }
+
+#[test]
+fn test_tokenize143() {
+    let comp = vec!["I", " ", "have", " ", "a", " ", "meeting", " ", "on", " ", "March", " ", "1", ",", " ", "1974"];
+    tokenize_assert("I have a meeting on March 1, 1974", comp);
+}
+
+#[test]
+fn test_tokenize144() {
+    let comp = vec!["On", " ", "June", " ", "8", "th", ",", " ", "2020", ",", " ", "I", " ", "am", " ", "going", " ", "to", " ", "be", " ", "the", " ", "first", " ", "man", " ", "on", " ", "Mars"];
+    tokenize_assert("On June 8th, 2020, I am going to be the first man on Mars", comp);
+}
+
+#[test]
+fn test_tokenize145() {
+    let comp = vec!["Meet", " ", "me", " ", "at", " ", "the", " ", "AM", "/", "PM", " ", "on", " ", "Sunset", " ", "at", " ", "3", ":", "00", " ", "AM", " ", "on", " ", "December", " ", "3", "rd", ",", " ", "2003"];
+    tokenize_assert("Meet me at the AM/PM on Sunset at 3:00 AM on December 3rd, 2003", comp);
+}
+
+#[test]
+fn test_tokenize146() {
+    let comp = vec!["Meet", " ", "me", " ", "at", " ", "3", ":", "00", " ", "AM", " ", "on", " ", "December", " ", "3", "rd", ",", " ", "2003", " ", "at", " ", "the", " ", "AM", "/", "PM", " ", "on", " ", "Sunset"];
+    tokenize_assert("Meet me at 3:00 AM on December 3rd, 2003 at the AM/PM on Sunset", comp);
+}
+
+#[test]
+fn test_tokenize147() {
+    let comp = vec!["Jan", " ", "29", ",", " ", "1945", " ", "14", ":", "45", " ", "AM", " ", "I", " ", "going", " ", "to", " ", "see", " ", "you", " ", "there", "?"];
+    tokenize_assert("Jan 29, 1945 14:45 AM I going to see you there?", comp);
+}
+
+#[test]
+fn test_tokenize148() {
+    let comp = vec!["2017", "-", "07", "-", "17", " ", "06", ":", "15", ":"];
+    tokenize_assert("2017-07-17 06:15:", comp);
+}
