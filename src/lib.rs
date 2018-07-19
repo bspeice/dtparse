@@ -952,7 +952,11 @@ impl Parser {
                     if let Some(value) = info.get_month(&tokens[idx + 4]) {
                         ymd.append(value as i32, &tokens[idx + 4], Some(YMDLabel::Month))?;
                     } else {
-                        ymd.append(tokens[idx + 4].parse::<i32>().unwrap(), &tokens[idx + 4], None)?;
+                        if let Ok(val) = tokens[idx + 4].parse::<i32>() {
+                            ymd.append(val, &tokens[idx + 4], None)?;
+                        } else {
+                            return Err(ParseInternalError::ValueError("".to_owned()));
+                        }
                     }
 
                     idx += 2;
