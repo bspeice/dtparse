@@ -123,7 +123,7 @@ impl Iterator for Tokenizer {
                     if nextchar == '.' || self.isword(nextchar) {
                         // UNWRAP: Because we're in non-empty parse state, we're guaranteed to have a token
                         token.as_mut().unwrap().push(nextchar);
-                    } else if self.isnum(nextchar) && token.as_ref().unwrap().chars().last() == Some('.') {
+                    } else if self.isnum(nextchar) && token.as_ref().unwrap().ends_with('.') {
                         token.as_mut().unwrap().push(nextchar);
                         state = ParseState::NumericDecimal;
                     } else {
@@ -135,7 +135,7 @@ impl Iterator for Tokenizer {
                     if nextchar == '.' || self.isnum(nextchar) {
                         // UNWRAP: Because we're in non-empty parse state, we're guaranteed to have a token
                         token.as_mut().unwrap().push(nextchar);
-                    } else if self.isword(nextchar) && token.as_ref().unwrap().chars().last() == Some('.') {
+                    } else if self.isword(nextchar) && token.as_ref().unwrap().ends_with('.') {
                         token.as_mut().unwrap().push(nextchar);
                         state = ParseState::AlphaDecimal;
                     } else {
