@@ -955,7 +955,7 @@ impl Parser {
                         if let Ok(val) = tokens[idx + 4].parse::<i32>() {
                             ymd.append(val, &tokens[idx + 4], None)?;
                         } else {
-                            return Err(ParseInternalError::ValueError("".to_owned()));
+                            return Err(ParseInternalError::ValueError("Unknown string format".to_owned()));
                         }
                     }
 
