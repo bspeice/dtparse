@@ -32,7 +32,7 @@ fn parse_and_assert(
     fuzzy_with_tokens: bool,
     default: Option<&NaiveDateTime>,
     ignoretz: bool,
-    tzinfos: HashMap<String, i32>,
+    tzinfos: &HashMap<String, i32>,
 ) {
 
     let mut parser = Parser::new(info);
@@ -82,7 +82,7 @@ fn parse_fuzzy_and_assert(
     fuzzy_with_tokens: bool,
     default: Option<&NaiveDateTime>,
     ignoretz: bool,
-    tzinfos: HashMap<String, i32>,
+    tzinfos: &HashMap<String, i32>,
 ) {
 
     let mut parser = Parser::new(info);
@@ -125,7 +125,7 @@ fn test_parse_default0() {
         micros: 0, tzo: None
     };
     parse_and_assert(pdt, info, "Thu Sep 25 10:36:28", None, None, false, false,
-                     Some(default_rsdate), false, HashMap::new());
+                     Some(default_rsdate), false, &HashMap::new());
 }
 
 #[test]
@@ -138,7 +138,7 @@ fn test_parse_default1() {
         micros: 0, tzo: None
     };
     parse_and_assert(pdt, info, "Sep 10:36:28", None, None, false, false,
-                     Some(default_rsdate), false, HashMap::new());
+                     Some(default_rsdate), false, &HashMap::new());
 }
 
 #[test]
@@ -151,7 +151,7 @@ fn test_parse_default2() {
         micros: 0, tzo: None
     };
     parse_and_assert(pdt, info, "10:36:28", None, None, false, false,
-                     Some(default_rsdate), false, HashMap::new());
+                     Some(default_rsdate), false, &HashMap::new());
 }
 
 #[test]
@@ -164,7 +164,7 @@ fn test_parse_default3() {
         micros: 0, tzo: None
     };
     parse_and_assert(pdt, info, "10:36", None, None, false, false,
-                     Some(default_rsdate), false, HashMap::new());
+                     Some(default_rsdate), false, &HashMap::new());
 }
 
 #[test]
@@ -177,7 +177,7 @@ fn test_parse_default4() {
         micros: 0, tzo: None
     };
     parse_and_assert(pdt, info, "Sep 2003", None, None, false, false,
-                     Some(default_rsdate), false, HashMap::new());
+                     Some(default_rsdate), false, &HashMap::new());
 }
 
 #[test]
@@ -190,7 +190,7 @@ fn test_parse_default5() {
         micros: 0, tzo: None
     };
     parse_and_assert(pdt, info, "Sep", None, None, false, false,
-                     Some(default_rsdate), false, HashMap::new());
+                     Some(default_rsdate), false, &HashMap::new());
 }
 
 #[test]
@@ -203,7 +203,7 @@ fn test_parse_default6() {
         micros: 0, tzo: None
     };
     parse_and_assert(pdt, info, "2003", None, None, false, false,
-                     Some(default_rsdate), false, HashMap::new());
+                     Some(default_rsdate), false, &HashMap::new());
 }
 
 #[test]
@@ -216,7 +216,7 @@ fn test_parse_default7() {
         micros: 500000, tzo: None
     };
     parse_and_assert(pdt, info, "10h36m28.5s", None, None, false, false,
-                     Some(default_rsdate), false, HashMap::new());
+                     Some(default_rsdate), false, &HashMap::new());
 }
 
 #[test]
@@ -229,7 +229,7 @@ fn test_parse_default8() {
         micros: 0, tzo: None
     };
     parse_and_assert(pdt, info, "10h36m28s", None, None, false, false,
-                     Some(default_rsdate), false, HashMap::new());
+                     Some(default_rsdate), false, &HashMap::new());
 }
 
 #[test]
@@ -242,7 +242,7 @@ fn test_parse_default9() {
         micros: 0, tzo: None
     };
     parse_and_assert(pdt, info, "10h36m", None, None, false, false,
-                     Some(default_rsdate), false, HashMap::new());
+                     Some(default_rsdate), false, &HashMap::new());
 }
 
 #[test]
@@ -255,7 +255,7 @@ fn test_parse_default10() {
         micros: 0, tzo: None
     };
     parse_and_assert(pdt, info, "10h", None, None, false, false,
-                     Some(default_rsdate), false, HashMap::new());
+                     Some(default_rsdate), false, &HashMap::new());
 }
 
 #[test]
@@ -268,7 +268,7 @@ fn test_parse_default11() {
         micros: 0, tzo: None
     };
     parse_and_assert(pdt, info, "10 h 36", None, None, false, false,
-                     Some(default_rsdate), false, HashMap::new());
+                     Some(default_rsdate), false, &HashMap::new());
 }
 
 #[test]
@@ -281,7 +281,7 @@ fn test_parse_default12() {
         micros: 0, tzo: None
     };
     parse_and_assert(pdt, info, "10 h 36.5", None, None, false, false,
-                     Some(default_rsdate), false, HashMap::new());
+                     Some(default_rsdate), false, &HashMap::new());
 }
 
 #[test]
@@ -294,7 +294,7 @@ fn test_parse_default13() {
         micros: 0, tzo: None
     };
     parse_and_assert(pdt, info, "36 m 5", None, None, false, false,
-                     Some(default_rsdate), false, HashMap::new());
+                     Some(default_rsdate), false, &HashMap::new());
 }
 
 #[test]
@@ -307,7 +307,7 @@ fn test_parse_default14() {
         micros: 0, tzo: None
     };
     parse_and_assert(pdt, info, "36 m 5 s", None, None, false, false,
-                     Some(default_rsdate), false, HashMap::new());
+                     Some(default_rsdate), false, &HashMap::new());
 }
 
 #[test]
@@ -320,7 +320,7 @@ fn test_parse_default15() {
         micros: 0, tzo: None
     };
     parse_and_assert(pdt, info, "36 m 05", None, None, false, false,
-                     Some(default_rsdate), false, HashMap::new());
+                     Some(default_rsdate), false, &HashMap::new());
 }
 
 #[test]
@@ -333,7 +333,7 @@ fn test_parse_default16() {
         micros: 0, tzo: None
     };
     parse_and_assert(pdt, info, "36 m 05 s", None, None, false, false,
-                     Some(default_rsdate), false, HashMap::new());
+                     Some(default_rsdate), false, &HashMap::new());
 }
 
 #[test]
@@ -346,7 +346,7 @@ fn test_parse_default17() {
         micros: 0, tzo: None
     };
     parse_and_assert(pdt, info, "10h am", None, None, false, false,
-                     Some(default_rsdate), false, HashMap::new());
+                     Some(default_rsdate), false, &HashMap::new());
 }
 
 #[test]
@@ -359,7 +359,7 @@ fn test_parse_default18() {
         micros: 0, tzo: None
     };
     parse_and_assert(pdt, info, "10h pm", None, None, false, false,
-                     Some(default_rsdate), false, HashMap::new());
+                     Some(default_rsdate), false, &HashMap::new());
 }
 
 #[test]
@@ -372,7 +372,7 @@ fn test_parse_default19() {
         micros: 0, tzo: None
     };
     parse_and_assert(pdt, info, "10am", None, None, false, false,
-                     Some(default_rsdate), false, HashMap::new());
+                     Some(default_rsdate), false, &HashMap::new());
 }
 
 #[test]
@@ -385,7 +385,7 @@ fn test_parse_default20() {
         micros: 0, tzo: None
     };
     parse_and_assert(pdt, info, "10pm", None, None, false, false,
-                     Some(default_rsdate), false, HashMap::new());
+                     Some(default_rsdate), false, &HashMap::new());
 }
 
 #[test]
@@ -398,7 +398,7 @@ fn test_parse_default21() {
         micros: 0, tzo: None
     };
     parse_and_assert(pdt, info, "10:00 am", None, None, false, false,
-                     Some(default_rsdate), false, HashMap::new());
+                     Some(default_rsdate), false, &HashMap::new());
 }
 
 #[test]
@@ -411,7 +411,7 @@ fn test_parse_default22() {
         micros: 0, tzo: None
     };
     parse_and_assert(pdt, info, "10:00 pm", None, None, false, false,
-                     Some(default_rsdate), false, HashMap::new());
+                     Some(default_rsdate), false, &HashMap::new());
 }
 
 #[test]
@@ -424,7 +424,7 @@ fn test_parse_default23() {
         micros: 0, tzo: None
     };
     parse_and_assert(pdt, info, "10:00am", None, None, false, false,
-                     Some(default_rsdate), false, HashMap::new());
+                     Some(default_rsdate), false, &HashMap::new());
 }
 
 #[test]
@@ -437,7 +437,7 @@ fn test_parse_default24() {
         micros: 0, tzo: None
     };
     parse_and_assert(pdt, info, "10:00pm", None, None, false, false,
-                     Some(default_rsdate), false, HashMap::new());
+                     Some(default_rsdate), false, &HashMap::new());
 }
 
 #[test]
@@ -450,7 +450,7 @@ fn test_parse_default25() {
         micros: 0, tzo: None
     };
     parse_and_assert(pdt, info, "10:00a.m", None, None, false, false,
-                     Some(default_rsdate), false, HashMap::new());
+                     Some(default_rsdate), false, &HashMap::new());
 }
 
 #[test]
@@ -463,7 +463,7 @@ fn test_parse_default26() {
         micros: 0, tzo: None
     };
     parse_and_assert(pdt, info, "10:00p.m", None, None, false, false,
-                     Some(default_rsdate), false, HashMap::new());
+                     Some(default_rsdate), false, &HashMap::new());
 }
 
 #[test]
@@ -476,7 +476,7 @@ fn test_parse_default27() {
         micros: 0, tzo: None
     };
     parse_and_assert(pdt, info, "10:00a.m.", None, None, false, false,
-                     Some(default_rsdate), false, HashMap::new());
+                     Some(default_rsdate), false, &HashMap::new());
 }
 
 #[test]
@@ -489,7 +489,7 @@ fn test_parse_default28() {
         micros: 0, tzo: None
     };
     parse_and_assert(pdt, info, "10:00p.m.", None, None, false, false,
-                     Some(default_rsdate), false, HashMap::new());
+                     Some(default_rsdate), false, &HashMap::new());
 }
 
 #[test]
@@ -502,7 +502,7 @@ fn test_parse_default29() {
         micros: 0, tzo: None
     };
     parse_and_assert(pdt, info, "October", None, None, false, false,
-                     Some(default_rsdate), false, HashMap::new());
+                     Some(default_rsdate), false, &HashMap::new());
 }
 
 #[test]
@@ -515,7 +515,7 @@ fn test_parse_default30() {
         micros: 0, tzo: None
     };
     parse_and_assert(pdt, info, "31-Dec-00", None, None, false, false,
-                     Some(default_rsdate), false, HashMap::new());
+                     Some(default_rsdate), false, &HashMap::new());
 }
 
 #[test]
@@ -528,7 +528,7 @@ fn test_parse_default31() {
         micros: 0, tzo: None
     };
     parse_and_assert(pdt, info, "0:01:02", None, None, false, false,
-                     Some(default_rsdate), false, HashMap::new());
+                     Some(default_rsdate), false, &HashMap::new());
 }
 
 #[test]
@@ -541,7 +541,7 @@ fn test_parse_default32() {
         micros: 0, tzo: None
     };
     parse_and_assert(pdt, info, "12h 01m02s am", None, None, false, false,
-                     Some(default_rsdate), false, HashMap::new());
+                     Some(default_rsdate), false, &HashMap::new());
 }
 
 #[test]
@@ -554,7 +554,7 @@ fn test_parse_default33() {
         micros: 0, tzo: None
     };
     parse_and_assert(pdt, info, "12:08 PM", None, None, false, false,
-                     Some(default_rsdate), false, HashMap::new());
+                     Some(default_rsdate), false, &HashMap::new());
 }
 
 #[test]
@@ -567,7 +567,7 @@ fn test_parse_default34() {
         micros: 0, tzo: None
     };
     parse_and_assert(pdt, info, "01h02m03", None, None, false, false,
-                     Some(default_rsdate), false, HashMap::new());
+                     Some(default_rsdate), false, &HashMap::new());
 }
 
 #[test]
@@ -580,7 +580,7 @@ fn test_parse_default35() {
         micros: 0, tzo: None
     };
     parse_and_assert(pdt, info, "01h02", None, None, false, false,
-                     Some(default_rsdate), false, HashMap::new());
+                     Some(default_rsdate), false, &HashMap::new());
 }
 
 #[test]
@@ -593,7 +593,7 @@ fn test_parse_default36() {
         micros: 0, tzo: None
     };
     parse_and_assert(pdt, info, "01h02s", None, None, false, false,
-                     Some(default_rsdate), false, HashMap::new());
+                     Some(default_rsdate), false, &HashMap::new());
 }
 
 #[test]
@@ -606,7 +606,7 @@ fn test_parse_default37() {
         micros: 0, tzo: None
     };
     parse_and_assert(pdt, info, "01m02", None, None, false, false,
-                     Some(default_rsdate), false, HashMap::new());
+                     Some(default_rsdate), false, &HashMap::new());
 }
 
 #[test]
@@ -619,7 +619,7 @@ fn test_parse_default38() {
         micros: 0, tzo: None
     };
     parse_and_assert(pdt, info, "01m02h", None, None, false, false,
-                     Some(default_rsdate), false, HashMap::new());
+                     Some(default_rsdate), false, &HashMap::new());
 }
 
 #[test]
@@ -632,7 +632,7 @@ fn test_parse_default39() {
         micros: 0, tzo: None
     };
     parse_and_assert(pdt, info, "2004 10 Apr 11h30m", None, None, false, false,
-                     Some(default_rsdate), false, HashMap::new());
+                     Some(default_rsdate), false, &HashMap::new());
 }
 
 #[test]
@@ -645,7 +645,7 @@ fn test_parse_default40() {
         micros: 0, tzo: None
     };
     parse_and_assert(pdt, info, "Sep 03", None, None, false, false,
-                     Some(default_rsdate), false, HashMap::new());
+                     Some(default_rsdate), false, &HashMap::new());
 }
 
 #[test]
@@ -658,7 +658,7 @@ fn test_parse_default41() {
         micros: 0, tzo: None
     };
     parse_and_assert(pdt, info, "Sep of 03", None, None, false, false,
-                     Some(default_rsdate), false, HashMap::new());
+                     Some(default_rsdate), false, &HashMap::new());
 }
 
 #[test]
@@ -671,7 +671,7 @@ fn test_parse_default42() {
         micros: 0, tzo: None
     };
     parse_and_assert(pdt, info, "02:17NOV2017", None, None, false, false,
-                     Some(default_rsdate), false, HashMap::new());
+                     Some(default_rsdate), false, &HashMap::new());
 }
 
 #[test]
@@ -684,7 +684,7 @@ fn test_parse_default43() {
         micros: 0, tzo: None
     };
     parse_and_assert(pdt, info, "Thu Sep 10:36:28", None, None, false, false,
-                     Some(default_rsdate), false, HashMap::new());
+                     Some(default_rsdate), false, &HashMap::new());
 }
 
 #[test]
@@ -697,7 +697,7 @@ fn test_parse_default44() {
         micros: 0, tzo: None
     };
     parse_and_assert(pdt, info, "Thu 10:36:28", None, None, false, false,
-                     Some(default_rsdate), false, HashMap::new());
+                     Some(default_rsdate), false, &HashMap::new());
 }
 
 #[test]
@@ -710,7 +710,7 @@ fn test_parse_default45() {
         micros: 0, tzo: None
     };
     parse_and_assert(pdt, info, "Wed", None, None, false, false,
-                     Some(default_rsdate), false, HashMap::new());
+                     Some(default_rsdate), false, &HashMap::new());
 }
 
 #[test]
@@ -723,7 +723,7 @@ fn test_parse_default46() {
         micros: 0, tzo: None
     };
     parse_and_assert(pdt, info, "Wednesday", None, None, false, false,
-                     Some(default_rsdate), false, HashMap::new());
+                     Some(default_rsdate), false, &HashMap::new());
 }
 
 #[test]
@@ -1355,7 +1355,7 @@ fn test_parse_tzinfo0() {
         micros: 0, tzo: Some(-10800),
     };
     parse_and_assert(pdt, info, "Thu Sep 25 10:36:28 BRST 2003", None, None, false, false,
-                     None, false, rs_tzinfo_map!());
+                     None, false, &rs_tzinfo_map!());
 }
 
 #[test]
@@ -1367,7 +1367,7 @@ fn test_parse_tzinfo1() {
         micros: 0, tzo: Some(-10800),
     };
     parse_and_assert(pdt, info, "2003 10:36:28 BRST 25 Sep Thu", None, None, false, false,
-                     None, false, rs_tzinfo_map!());
+                     None, false, &rs_tzinfo_map!());
 }
 
 #[test]
@@ -1379,7 +1379,7 @@ fn test_parse_offset0() {
         micros: 0, tzo: Some(-10800),
     };
     parse_and_assert(pdt, info, "Thu, 25 Sep 2003 10:49:41 -0300", None, None, false, false,
-                     None, false, HashMap::new());
+                     None, false, &HashMap::new());
 }
 
 #[test]
@@ -1391,7 +1391,7 @@ fn test_parse_offset1() {
         micros: 500000, tzo: Some(-10800),
     };
     parse_and_assert(pdt, info, "2003-09-25T10:49:41.5-03:00", None, None, false, false,
-                     None, false, HashMap::new());
+                     None, false, &HashMap::new());
 }
 
 #[test]
@@ -1403,7 +1403,7 @@ fn test_parse_offset2() {
         micros: 0, tzo: Some(-10800),
     };
     parse_and_assert(pdt, info, "2003-09-25T10:49:41-03:00", None, None, false, false,
-                     None, false, HashMap::new());
+                     None, false, &HashMap::new());
 }
 
 #[test]
@@ -1415,7 +1415,7 @@ fn test_parse_offset3() {
         micros: 500000, tzo: Some(-10800),
     };
     parse_and_assert(pdt, info, "20030925T104941.5-0300", None, None, false, false,
-                     None, false, HashMap::new());
+                     None, false, &HashMap::new());
 }
 
 #[test]
@@ -1427,7 +1427,7 @@ fn test_parse_offset4() {
         micros: 0, tzo: Some(-10800),
     };
     parse_and_assert(pdt, info, "20030925T104941-0300", None, None, false, false,
-                     None, false, HashMap::new());
+                     None, false, &HashMap::new());
 }
 
 #[test]
@@ -1439,7 +1439,7 @@ fn test_parse_dayfirst0() {
         micros: 0, tzo: None,
     };
     parse_and_assert(pdt, info, "10-09-2003", Some(true), None, false, false,
-                     None, false, HashMap::new());
+                     None, false, &HashMap::new());
 }
 
 #[test]
@@ -1451,7 +1451,7 @@ fn test_parse_dayfirst1() {
         micros: 0, tzo: None,
     };
     parse_and_assert(pdt, info, "10.09.2003", Some(true), None, false, false,
-                     None, false, HashMap::new());
+                     None, false, &HashMap::new());
 }
 
 #[test]
@@ -1463,7 +1463,7 @@ fn test_parse_dayfirst2() {
         micros: 0, tzo: None,
     };
     parse_and_assert(pdt, info, "10/09/2003", Some(true), None, false, false,
-                     None, false, HashMap::new());
+                     None, false, &HashMap::new());
 }
 
 #[test]
@@ -1475,7 +1475,7 @@ fn test_parse_dayfirst3() {
         micros: 0, tzo: None,
     };
     parse_and_assert(pdt, info, "10 09 2003", Some(true), None, false, false,
-                     None, false, HashMap::new());
+                     None, false, &HashMap::new());
 }
 
 #[test]
@@ -1487,7 +1487,7 @@ fn test_parse_dayfirst4() {
         micros: 0, tzo: None,
     };
     parse_and_assert(pdt, info, "090107", Some(true), None, false, false,
-                     None, false, HashMap::new());
+                     None, false, &HashMap::new());
 }
 
 #[test]
@@ -1499,7 +1499,7 @@ fn test_parse_dayfirst5() {
         micros: 0, tzo: None,
     };
     parse_and_assert(pdt, info, "2015 09 25", Some(true), None, false, false,
-                     None, false, HashMap::new());
+                     None, false, &HashMap::new());
 }
 
 #[test]
@@ -1511,7 +1511,7 @@ fn test_parse_yearfirst0() {
         micros: 0, tzo: None,
     };
     parse_and_assert(pdt, info, "10-09-03", None, Some(true), false, false,
-                     None, false, HashMap::new());
+                     None, false, &HashMap::new());
 }
 
 #[test]
@@ -1523,7 +1523,7 @@ fn test_parse_yearfirst1() {
         micros: 0, tzo: None,
     };
     parse_and_assert(pdt, info, "10.09.03", None, Some(true), false, false,
-                     None, false, HashMap::new());
+                     None, false, &HashMap::new());
 }
 
 #[test]
@@ -1535,7 +1535,7 @@ fn test_parse_yearfirst2() {
         micros: 0, tzo: None,
     };
     parse_and_assert(pdt, info, "10/09/03", None, Some(true), false, false,
-                     None, false, HashMap::new());
+                     None, false, &HashMap::new());
 }
 
 #[test]
@@ -1547,7 +1547,7 @@ fn test_parse_yearfirst3() {
         micros: 0, tzo: None,
     };
     parse_and_assert(pdt, info, "10 09 03", None, Some(true), false, false,
-                     None, false, HashMap::new());
+                     None, false, &HashMap::new());
 }
 
 #[test]
@@ -1559,7 +1559,7 @@ fn test_parse_yearfirst4() {
         micros: 0, tzo: None,
     };
     parse_and_assert(pdt, info, "090107", None, Some(true), false, false,
-                     None, false, HashMap::new());
+                     None, false, &HashMap::new());
 }
 
 #[test]
@@ -1571,7 +1571,7 @@ fn test_parse_yearfirst5() {
         micros: 0, tzo: None,
     };
     parse_and_assert(pdt, info, "2015 09 25", None, Some(true), false, false,
-                     None, false, HashMap::new());
+                     None, false, &HashMap::new());
 }
 
 #[test]
@@ -1583,7 +1583,7 @@ fn test_parse_dfyf0() {
         micros: 0, tzo: None,
     };
     parse_and_assert(pdt, info, "090107", Some(true), Some(true), false, false,
-                     None, false, HashMap::new());
+                     None, false, &HashMap::new());
 }
 
 #[test]
@@ -1595,7 +1595,7 @@ fn test_parse_dfyf1() {
         micros: 0, tzo: None,
     };
     parse_and_assert(pdt, info, "2015 09 25", Some(true), Some(true), false, false,
-                     None, false, HashMap::new());
+                     None, false, &HashMap::new());
 }
 
 #[test]
@@ -1608,7 +1608,7 @@ fn test_unspecified_fallback0() {
         micros: 0, tzo: None
     };
     parse_and_assert(pdt, info, "April 2009", None, None, false, false,
-                     Some(default_rsdate), false, HashMap::new());
+                     Some(default_rsdate), false, &HashMap::new());
 }
 
 #[test]
@@ -1621,7 +1621,7 @@ fn test_unspecified_fallback1() {
         micros: 0, tzo: None
     };
     parse_and_assert(pdt, info, "Feb 2007", None, None, false, false,
-                     Some(default_rsdate), false, HashMap::new());
+                     Some(default_rsdate), false, &HashMap::new());
 }
 
 #[test]
@@ -1634,7 +1634,7 @@ fn test_unspecified_fallback2() {
         micros: 0, tzo: None
     };
     parse_and_assert(pdt, info, "Feb 2008", None, None, false, false,
-                     Some(default_rsdate), false, HashMap::new());
+                     Some(default_rsdate), false, &HashMap::new());
 }
 
 #[test]
@@ -1646,7 +1646,7 @@ fn test_parse_ignoretz0() {
         micros: 0, tzo: None
     };
     parse_and_assert(pdt, info, "Thu Sep 25 10:36:28 BRST 2003", None, None, false, false,
-                     None, true, HashMap::new());
+                     None, true, &HashMap::new());
 }
 
 #[test]
@@ -1658,7 +1658,7 @@ fn test_parse_ignoretz1() {
         micros: 0, tzo: None
     };
     parse_and_assert(pdt, info, "1996.07.10 AD at 15:08:56 PDT", None, None, false, false,
-                     None, true, HashMap::new());
+                     None, true, &HashMap::new());
 }
 
 #[test]
@@ -1670,7 +1670,7 @@ fn test_parse_ignoretz2() {
         micros: 0, tzo: None
     };
     parse_and_assert(pdt, info, "Tuesday, April 12, 1952 AD 3:30:42pm PST", None, None, false, false,
-                     None, true, HashMap::new());
+                     None, true, &HashMap::new());
 }
 
 #[test]
@@ -1682,7 +1682,7 @@ fn test_parse_ignoretz3() {
         micros: 0, tzo: None
     };
     parse_and_assert(pdt, info, "November 5, 1994, 8:15:30 am EST", None, None, false, false,
-                     None, true, HashMap::new());
+                     None, true, &HashMap::new());
 }
 
 #[test]
@@ -1694,7 +1694,7 @@ fn test_parse_ignoretz4() {
         micros: 0, tzo: None
     };
     parse_and_assert(pdt, info, "1994-11-05T08:15:30-05:00", None, None, false, false,
-                     None, true, HashMap::new());
+                     None, true, &HashMap::new());
 }
 
 #[test]
@@ -1706,7 +1706,7 @@ fn test_parse_ignoretz5() {
         micros: 0, tzo: None
     };
     parse_and_assert(pdt, info, "1994-11-05T08:15:30Z", None, None, false, false,
-                     None, true, HashMap::new());
+                     None, true, &HashMap::new());
 }
 
 #[test]
@@ -1718,7 +1718,7 @@ fn test_parse_ignoretz6() {
         micros: 0, tzo: None
     };
     parse_and_assert(pdt, info, "1976-07-04T00:01:02Z", None, None, false, false,
-                     None, true, HashMap::new());
+                     None, true, &HashMap::new());
 }
 
 #[test]
@@ -1730,7 +1730,7 @@ fn test_parse_ignoretz7() {
         micros: 0, tzo: None
     };
     parse_and_assert(pdt, info, "Tue Apr 4 00:22:12 PDT 1995", None, None, false, false,
-                     None, true, HashMap::new());
+                     None, true, &HashMap::new());
 }
 
 #[test]
@@ -1742,7 +1742,7 @@ fn test_fuzzy_tzinfo0() {
         micros: 0, tzo: Some(-10800)
     };
     parse_fuzzy_and_assert(pdt, None, info, "Today is 25 of September of 2003, exactly at 10:49:41 with timezone -03:00.", None, None, true, false,
-                           None, false, HashMap::new());
+                           None, false, &HashMap::new());
 }
 
 #[test]
@@ -1755,7 +1755,7 @@ fn test_fuzzy_tokens_tzinfo0() {
     };
     let tokens = vec!["Today is ".to_owned(), "of ".to_owned(), ", exactly at ".to_owned(), " with timezone ".to_owned(), ".".to_owned()];
     parse_fuzzy_and_assert(pdt, Some(tokens), info, "Today is 25 of September of 2003, exactly at 10:49:41 with timezone -03:00.", None, None, true, true,
-                           None, false, HashMap::new());
+                           None, false, &HashMap::new());
 }
 
 #[test]
@@ -1767,7 +1767,7 @@ fn test_fuzzy_simple0() {
         micros: 0, tzo: None
     };
     parse_fuzzy_and_assert(pdt, None, info, "I have a meeting on March 1, 1974", None, None, true, false,
-                           None, false, HashMap::new());
+                           None, false, &HashMap::new());
 }
 
 #[test]
@@ -1779,7 +1779,7 @@ fn test_fuzzy_simple1() {
         micros: 0, tzo: None
     };
     parse_fuzzy_and_assert(pdt, None, info, "On June 8th, 2020, I am going to be the first man on Mars", None, None, true, false,
-                           None, false, HashMap::new());
+                           None, false, &HashMap::new());
 }
 
 #[test]
@@ -1791,7 +1791,7 @@ fn test_fuzzy_simple2() {
         micros: 0, tzo: None
     };
     parse_fuzzy_and_assert(pdt, None, info, "Meet me at the AM/PM on Sunset at 3:00 AM on December 3rd, 2003", None, None, true, false,
-                           None, false, HashMap::new());
+                           None, false, &HashMap::new());
 }
 
 #[test]
@@ -1803,7 +1803,7 @@ fn test_fuzzy_simple3() {
         micros: 0, tzo: None
     };
     parse_fuzzy_and_assert(pdt, None, info, "Meet me at 3:00 AM on December 3rd, 2003 at the AM/PM on Sunset", None, None, true, false,
-                           None, false, HashMap::new());
+                           None, false, &HashMap::new());
 }
 
 #[test]
@@ -1815,7 +1815,7 @@ fn test_fuzzy_simple4() {
         micros: 0, tzo: None
     };
     parse_fuzzy_and_assert(pdt, None, info, "Jan 29, 1945 14:45 AM I going to see you there?", None, None, true, false,
-                           None, false, HashMap::new());
+                           None, false, &HashMap::new());
 }
 
 #[test]
@@ -1827,5 +1827,5 @@ fn test_fuzzy_simple5() {
         micros: 0, tzo: None
     };
     parse_fuzzy_and_assert(pdt, None, info, "2017-07-17 06:15:", None, None, true, false,
-                           None, false, HashMap::new());
+                           None, false, &HashMap::new());
 }

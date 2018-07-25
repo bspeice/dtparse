@@ -39,51 +39,32 @@ lazy_static! {
     static ref SIXTY: Decimal = Decimal::new(60, 0);
 }
 
-#[derive(Debug, PartialEq)]
-pub enum ParseInternalError {
-    // Errors that indicate internal bugs
-    YMDEarlyResolve,
-    YMDValueUnset(Vec<YMDLabel>),
-    ParseIndexError,
-    InvalidDecimal,
-    InvalidInteger,
-
-    // Python-style errors
-    ValueError(String),
-}
-
-impl From<DecimalError> for ParseInternalError {
-    fn from(_err: DecimalError) -> Self {
-        ParseInternalError::InvalidDecimal
+impl From<DecimalError> for ParseError {
+    fn from(err: DecimalError) -> Self {
+        ParseError::InvalidNumeric(format!("{}", err))
     }
 }
 
-impl From<ParseIntError> for ParseInternalError {
-    fn from(_err: ParseIntError) -> Self {
-        ParseInternalError::InvalidInteger
+impl From<ParseIntError> for ParseError {
+    fn from(err: ParseIntError) -> Self {
+        ParseError::InvalidNumeric(format!("{}", err))
     }
 }
 
 #[derive(Debug, PartialEq)]
 pub enum ParseError {
+    AmbiguousYMD,
     AmbiguousWeekday,
-    InternalError(ParseInternalError),
-    InvalidMonth,
-    UnrecognizedToken(String),
-    InvalidParseResult(ParsingResult),
     AmPmWithoutHour,
-    TimezoneUnsupported,
     ImpossibleTimestamp(&'static str),
-}
-
-impl From<ParseInternalError> for ParseError {
-    fn from(err: ParseInternalError) -> Self {
-        ParseError::InternalError(err)
-    }
+    InvalidNumeric(String),
+    UnrecognizedFormat,
+    UnrecognizedToken(String),
+    TimezoneUnsupported,
+    YearMonthDayError(&'static str),
 }
 
 type ParseResult<I> = Result<I, ParseError>;
-type ParseIResult<I> = Result<I, ParseInternalError>;
 
 pub(crate) fn tokenize(parse_string: &str) -> Vec<String> {
     let tokenizer = Tokenizer::new(parse_string);
@@ -268,13 +249,13 @@ fn days_in_month(year: i32, month: i32) -> Result<u32, ParseError> {
         1 | 3 | 5 | 7 | 8 | 10 | 12 => Ok(31),
         4 | 6 | 9 | 11 => Ok(30),
         _ => {
-            Err(ParseError::InvalidMonth)
+            Err(ParseError::ImpossibleTimestamp("Invalid month"))
         }
     }
 }
 
 #[derive(Debug, Hash, PartialEq, Eq)]
-pub enum YMDLabel {
+enum YMDLabel {
     Year,
     Month,
     Day,
@@ -311,7 +292,7 @@ impl YMD {
         }
     }
 
-    fn append(&mut self, val: i32, token: &str, label: Option<YMDLabel>) -> ParseIResult<()> {
+    fn append(&mut self, val: i32, token: &str, label: Option<YMDLabel>) -> ParseResult<()> {
         let mut label = label;
 
         // Python auto-detects strings using the '__len__' function here.
@@ -320,12 +301,11 @@ impl YMD {
             self.century_specified = true;
             match label {
                 None | Some(YMDLabel::Year) => label = Some(YMDLabel::Year),
-                _ => {
-                    return Err(ParseInternalError::ValueError(format!(
-                        "Invalid label {:?} for token {:?}",
-                        label,
-                        token
-                    )))
+                Some(YMDLabel::Month) => {
+                    return Err(ParseError::ImpossibleTimestamp("Invalid month"))
+                }
+                Some(YMDLabel::Day) => {
+                    return Err(ParseError::ImpossibleTimestamp("Invalid day"))
                 }
             }
         }
@@ -335,12 +315,11 @@ impl YMD {
             match label {
                 None => label = Some(YMDLabel::Year),
                 Some(YMDLabel::Year) => (),
-                _ => {
-                    return Err(ParseInternalError::ValueError(format!(
-                        "Invalid label {:?} for token {:?}",
-                        label,
-                        token
-                    )))
+                Some(YMDLabel::Month) => {
+                    return Err(ParseError::ImpossibleTimestamp("Invalid month"))
+                }
+                Some(YMDLabel::Day) => {
+                    return Err(ParseError::ImpossibleTimestamp("Invalid day"))
                 }
             }
         }
@@ -350,9 +329,7 @@ impl YMD {
         match label {
             Some(YMDLabel::Month) => {
                 if self.mstridx.is_some() {
-                    Err(ParseInternalError::ValueError(
-                        "Month already set.".to_owned(),
-                    ))
+                    Err(ParseError::YearMonthDayError("Month already set"))
                 } else {
                     self.mstridx = Some(self._ymd.len() - 1);
                     Ok(())
@@ -360,9 +337,7 @@ impl YMD {
             }
             Some(YMDLabel::Day) => {
                 if self.dstridx.is_some() {
-                    Err(ParseInternalError::ValueError(
-                        "Day already set.".to_owned(),
-                    ))
+                    Err(ParseError::YearMonthDayError("Day already set"))
                 } else {
                     self.dstridx = Some(self._ymd.len() - 1);
                     Ok(())
@@ -370,9 +345,7 @@ impl YMD {
             }
             Some(YMDLabel::Year) => {
                 if self.ystridx.is_some() {
-                    Err(ParseInternalError::ValueError(
-                        "Year already set.".to_owned(),
-                    ))
+                    Err(ParseError::YearMonthDayError("Year already set"))
                 } else {
                     self.ystridx = Some(self._ymd.len() - 1);
                     Ok(())
@@ -385,7 +358,7 @@ impl YMD {
     fn resolve_from_stridxs(
         &mut self,
         strids: &mut HashMap<YMDLabel, usize>,
-    ) -> ParseIResult<(Option<i32>, Option<i32>, Option<i32>)> {
+    ) -> ParseResult<(Option<i32>, Option<i32>, Option<i32>)> {
         if self._ymd.len() == 3 && strids.len() == 2 {
             let missing_key = if !strids.contains_key(&YMDLabel::Year) {
                 YMDLabel::Year
@@ -408,7 +381,7 @@ impl YMD {
         }
 
         if self._ymd.len() != strids.len() {
-            return Err(ParseInternalError::YMDEarlyResolve);
+            return Err(ParseError::YearMonthDayError("Tried to resolve year, month, and day without enough information"));
         }
 
         Ok((
@@ -428,7 +401,7 @@ impl YMD {
         &mut self,
         yearfirst: bool,
         dayfirst: bool,
-    ) -> ParseIResult<(Option<i32>, Option<i32>, Option<i32>)> {
+    ) -> ParseResult<(Option<i32>, Option<i32>, Option<i32>)> {
         let len_ymd = self._ymd.len();
 
         let mut strids: HashMap<YMDLabel, usize> = HashMap::new();
@@ -446,10 +419,9 @@ impl YMD {
             return self.resolve_from_stridxs(&mut strids);
         };
 
+        // Received year, month, day, and ???
         if len_ymd > 3 {
-            return Err(ParseInternalError::ValueError(
-                "More than three YMD values".to_owned(),
-            ));
+            return Err(ParseError::YearMonthDayError("Received extra tokens in resolving year, month, and day"));
         }
 
         match (len_ymd, self.mstridx) {
@@ -515,7 +487,7 @@ impl YMD {
 }
 
 #[derive(Default, Debug, PartialEq)]
-pub struct ParsingResult {
+struct ParsingResult {
     year: Option<i32>,
     month: Option<i32>,
     day: Option<i32>,
@@ -550,7 +522,7 @@ impl Parser {
         fuzzy_with_tokens: bool,
         default: Option<&NaiveDateTime>,
         ignoretz: bool,
-        tzinfos: HashMap<String, i32>,
+        tzinfos: &HashMap<String, i32>,
     ) -> ParseResult<(NaiveDateTime, Option<FixedOffset>, Option<Vec<String>>)> {
         let default_date = default.unwrap_or(&Local::now().naive_local()).date();
 
@@ -725,7 +697,7 @@ impl Parser {
         res.day = day;
 
         if !self.info.validate(&mut res) {
-            Err(ParseError::InvalidParseResult(res))
+            Err(ParseError::UnrecognizedFormat)
         } else if fuzzy_with_tokens {
             let skipped_tokens = self.recombine_skipped(skipped_idxs, l);
             Ok((res, Some(skipped_tokens)))
@@ -823,7 +795,7 @@ impl Parser {
         &self,
         _dt: &NaiveDateTime,
         res: &ParsingResult,
-        tzinfos: HashMap<String, i32>,
+        tzinfos: &HashMap<String, i32>,
     ) -> ParseResult<Option<FixedOffset>> {
         // TODO: Actual timezone support
         if let Some(offset) = res.tzoffset {
@@ -854,7 +826,7 @@ impl Parser {
         ymd: &mut YMD,
         res: &mut ParsingResult,
         fuzzy: bool,
-    ) -> Result<usize, ParseInternalError> {
+    ) -> ParseResult<usize> {
         let mut idx = idx;
         let value_repr = &tokens[idx];
         let mut value = Decimal::from_str(&value_repr).unwrap();
@@ -955,7 +927,7 @@ impl Parser {
                         if let Ok(val) = tokens[idx + 4].parse::<i32>() {
                             ymd.append(val, &tokens[idx + 4], None)?;
                         } else {
-                            return Err(ParseInternalError::ValueError("Unknown string format".to_owned()));
+                            return Err(ParseError::UnrecognizedFormat);
                         }
                     }
 
@@ -987,7 +959,7 @@ impl Parser {
         } else if ymd.could_be_day(value.to_i64().unwrap() as i32) {
             ymd.append(value.to_i64().unwrap() as i32, &value_repr, None)?;
         } else if !fuzzy {
-            return Err(ParseInternalError::ValueError("".to_owned()));
+            return Err(ParseError::UnrecognizedFormat);
         }
 
         Ok(idx)
@@ -1003,7 +975,7 @@ impl Parser {
         }
     }
 
-    fn parsems(&self, seconds_str: &str) -> Result<(i32, i32), ParseInternalError> {
+    fn parsems(&self, seconds_str: &str) -> ParseResult<(i32, i32)> {
         if seconds_str.contains(".") {
             let split: Vec<&str> = seconds_str.split(".").collect();
             let (i, f): (&str, &str) = (split[0], split[1]);
@@ -1159,7 +1131,7 @@ pub fn parse(timestr: &str) -> ParseResult<(NaiveDateTime, Option<FixedOffset>)>
         false,
         None,
         false,
-        HashMap::new(),
+        &HashMap::new(),
     )?;
 
     Ok((res.0, res.1))
