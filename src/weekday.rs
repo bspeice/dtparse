@@ -64,7 +64,7 @@ pub fn day_of_week(year: u32, month: u32, day: u32) -> ParseResult<DayOfWeek> {
             let c = (year - 1) / 100;
             (c, year - 1 - 100 * c)
         },
-        _ => return Err(ParseError::InvalidMonth)
+        _ => return Err(ParseError::ImpossibleTimestamp("Invalid month"))
     };
 
     let e = match month {

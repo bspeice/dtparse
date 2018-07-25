@@ -222,7 +222,7 @@ fn parse_and_assert(
     fuzzy_with_tokens: bool,
     default: Option<&NaiveDateTime>,
     ignoretz: bool,
-    tzinfos: HashMap<String, i32>,
+    tzinfos: &HashMap<String, i32>,
 ) {
 
     let mut parser = Parser::new(info);
@@ -272,7 +272,7 @@ fn parse_fuzzy_and_assert(
     fuzzy_with_tokens: bool,
     default: Option<&NaiveDateTime>,
     ignoretz: bool,
-    tzinfos: HashMap<String, i32>,
+    tzinfos: &HashMap<String, i32>,
 ) {
 
     let mut parser = Parser::new(info);
@@ -316,7 +316,7 @@ fn test_parse_default{i}() {{
         micros: {d.microsecond}, tzo: None
     }};
     parse_and_assert(pdt, info, "{s}", None, None, false, false,
-                     Some(default_rsdate), false, HashMap::new());
+                     Some(default_rsdate), false, &HashMap::new());
 }}\n'''
 
 TEST_PARSE_SIMPLE = '''
@@ -340,7 +340,7 @@ fn test_parse_tzinfo{i}() {{
         micros: {d.microsecond}, tzo: Some({offset}),
     }};
     parse_and_assert(pdt, info, "{s}", None, None, false, false,
-                     None, false, rs_tzinfo_map!());
+                     None, false, &rs_tzinfo_map!());
 }}\n'''
 
 TEST_PARSE_OFFSET = '''
@@ -353,7 +353,7 @@ fn test_parse_offset{i}() {{
         micros: {d.microsecond}, tzo: Some({offset}),
     }};
     parse_and_assert(pdt, info, "{s}", None, None, false, false,
-                     None, false, HashMap::new());
+                     None, false, &HashMap::new());
 }}\n'''
 
 TEST_PARSE_DAYFIRST = '''
@@ -366,7 +366,7 @@ fn test_parse_dayfirst{i}() {{
         micros: {d.microsecond}, tzo: None,
     }};
     parse_and_assert(pdt, info, "{s}", Some(true), None, false, false,
-                     None, false, HashMap::new());
+                     None, false, &HashMap::new());
 }}\n'''
 
 TEST_PARSE_YEARFIRST = '''
@@ -379,7 +379,7 @@ fn test_parse_yearfirst{i}() {{
         micros: {d.microsecond}, tzo: None,
     }};
     parse_and_assert(pdt, info, "{s}", None, Some(true), false, false,
-                     None, false, HashMap::new());
+                     None, false, &HashMap::new());
 }}\n'''
 
 TEST_PARSE_DFYF = '''
@@ -392,7 +392,7 @@ fn test_parse_dfyf{i}() {{
         micros: {d.microsecond}, tzo: None,
     }};
     parse_and_assert(pdt, info, "{s}", Some(true), Some(true), false, false,
-                     None, false, HashMap::new());
+                     None, false, &HashMap::new());
 }}\n'''
 
 TEST_UNSPECIFIED_FALLBACK = '''
@@ -406,7 +406,7 @@ fn test_unspecified_fallback{i}() {{
         micros: {d.microsecond}, tzo: None
     }};
     parse_and_assert(pdt, info, "{s}", None, None, false, false,
-                     Some(default_rsdate), false, HashMap::new());
+                     Some(default_rsdate), false, &HashMap::new());
 }}\n'''
 
 TEST_PARSE_IGNORETZ = '''
@@ -419,7 +419,7 @@ fn test_parse_ignoretz{i}() {{
         micros: {d.microsecond}, tzo: None
     }};
     parse_and_assert(pdt, info, "{s}", None, None, false, false,
-                     None, true, HashMap::new());
+                     None, true, &HashMap::new());
 }}\n'''
 
 TEST_PARSE_DEFAULT_IGNORE = '''
@@ -434,7 +434,7 @@ fn test_parse_default_ignore{i}() {{
         micros: {d.microsecond}, tzo: None
     }};
     parse_and_assert(pdt, info, "{s}", None, None, false, false,
-                     Some(default_rsdate), false, HashMap::new());
+                     Some(default_rsdate), false, &HashMap::new());
 }}\n'''
 
 TEST_FUZZY_TZINFO = '''
@@ -447,7 +447,7 @@ fn test_fuzzy_tzinfo{i}() {{
         micros: {d.microsecond}, tzo: Some({offset})
     }};
     parse_fuzzy_and_assert(pdt, None, info, "{s}", None, None, true, false,
-                           None, false, HashMap::new());
+                           None, false, &HashMap::new());
 }}\n'''
 
 TEST_FUZZY_TOKENS_TZINFO = '''
@@ -461,7 +461,7 @@ fn test_fuzzy_tokens_tzinfo{i}() {{
     }};
     let tokens = vec![{tokens}];
     parse_fuzzy_and_assert(pdt, Some(tokens), info, "{s}", None, None, true, true,
-                           None, false, HashMap::new());
+                           None, false, &HashMap::new());
 }}\n'''
 
 TEST_FUZZY_SIMPLE = '''
@@ -474,7 +474,7 @@ fn test_fuzzy_simple{i}() {{
         micros: {d.microsecond}, tzo: None
     }};
     parse_fuzzy_and_assert(pdt, None, info, "{s}", None, None, true, false,
-                           None, false, HashMap::new());
+                           None, false, &HashMap::new());
 }}\n'''
 
 
