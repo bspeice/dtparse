@@ -85,7 +85,7 @@ impl From<ParseInternalError> for ParseError {
 type ParseResult<I> = Result<I, ParseError>;
 type ParseIResult<I> = Result<I, ParseInternalError>;
 
-pub fn tokenize(parse_string: &str) -> Vec<String> {
+pub(crate) fn tokenize(parse_string: &str) -> Vec<String> {
     let tokenizer = Tokenizer::new(parse_string);
     tokenizer.collect()
 }
