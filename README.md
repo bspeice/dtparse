@@ -1,4 +1,7 @@
 # dtparse
+
+![travisci](https://travis-ci.org/bspeice/dtparse.svg?branch=master)
+
 A [dateutil](https://github.com/dateutil/dateutil)-compatible timestamp parser for Rust
 
 ## Where it stands
