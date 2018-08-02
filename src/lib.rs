@@ -1,4 +1,4 @@
-// #![deny(missing_docs)]
+#![deny(missing_docs)]
 #![cfg_attr(test, deny(warnings))]
 
 //! # dtparse
@@ -11,8 +11,8 @@
 //! from the test cases should give some context:
 //! 
 //! ```rust
-//! extern crate chrono;
-//! extern crate dtparse;
+//! # extern crate chrono;
+//! # extern crate dtparse;
 //! use chrono::prelude::*;
 //! use dtparse::parse;
 //! 
@@ -35,11 +35,11 @@
 //! only content if we dig into the implementation a bit!
 //! 
 //! ```rust
-//! extern crate chrono;
-//! extern crate dtparse;
+//! # extern crate chrono;
+//! # extern crate dtparse;
 //! use chrono::prelude::*;
 //! use dtparse::Parser;
-//! use std::collections::HashMap;
+//! # use std::collections::HashMap;
 //! 
 //! let mut p = Parser::default();
 //! assert_eq!(
@@ -116,16 +116,25 @@ impl From<ParseIntError> for ParseError {
     }
 }
 
+/// Potential errors that come up when trying to parse time strings
 #[derive(Debug, PartialEq)]
 pub enum ParseError {
-    AmbiguousYMD,
-    AmbiguousWeekday,
+    /// Attempted to specify "AM" or "PM" without indicating an hour
     AmPmWithoutHour,
+    /// Impossible value for a category; the 32nd day of a month is impossible
     ImpossibleTimestamp(&'static str),
+    /// Unable to parse a numeric value from a token expected to be numeric
     InvalidNumeric(String),
+    /// Generally unrecognized date string; please report to maintainer so
+    /// new test cases can be developed
     UnrecognizedFormat,
+    /// A token the parser did not recognize was in the string, and fuzzy mode was off
     UnrecognizedToken(String),
+    /// A timezone could not be handled; please report to maintainer as the timestring
+    /// likely exposes a bug in the implementation
     TimezoneUnsupported,
+    /// Parser unable to make sense of year/month/day parameters in the time string;
+    /// please report to maintainer as the timestring likely exposes a bug in implementation
     YearMonthDayError(&'static str),
 }
 
@@ -136,7 +145,9 @@ pub(crate) fn tokenize(parse_string: &str) -> Vec<String> {
     tokenizer.collect()
 }
 
-fn parse_info(vec: Vec<Vec<&str>>) -> HashMap<String, usize> {
+/// Utility function for `ParserInfo` that helps in constructing
+/// the attributes that make up the `ParserInfo` container
+pub fn parse_info(vec: Vec<Vec<&str>>) -> HashMap<String, usize> {
     let mut m = HashMap::new();
 
     if vec.len() == 1 {
@@ -154,6 +165,23 @@ fn parse_info(vec: Vec<Vec<&str>>) -> HashMap<String, usize> {
     m
 }
 
+/// Container for specific tokens to be recognized during parsing.
+/// 
+/// - `jump`: Values that indicate the end of a token for parsing and can be ignored
+/// - `weekday`: Names of the days of the week
+/// - `months`: Names of the months
+/// - `hms`: Names for the units of time - hours, minutes, seconds in English
+/// - `ampm`: AM and PM tokens
+/// - `utczone`: Tokens indicating a UTC-timezone string
+/// - `pertain`: Tokens indicating a "belongs to" relationship; in English this is just "of"
+/// - `tzoffset`:
+/// - `dayfirst`: Upon encountering an ambiguous date, treat the first value as the day
+/// - `yearfirst`: Upon encountering an ambiguous date, treat the first value as the year
+/// - `year`: The current year
+/// - `century`: The first year in the current century
+/// 
+/// Please note that if both `dayfirst` and `yearfirst` are true, years take precedence
+/// and will be parsed as "YDM"
 #[derive(Debug, PartialEq)]
 pub struct ParserInfo {
     jump: HashMap<String, usize>,
@@ -171,6 +199,7 @@ pub struct ParserInfo {
 }
 
 impl Default for ParserInfo {
+    /// Create a basic `ParserInfo` object suitable for parsing dates in English
     fn default() -> Self {
         let year = Local::now().year();
         let century = year / 100 * 100;
@@ -568,16 +597,54 @@ struct ParsingResult {
     any_unused_tokens: Vec<String>,
 }
 
+/// Parser is responsible for doing the actual work of understanding a time string.
+/// The root level `parse` function is responsible for constructing a default `Parser`
+/// and triggering its behavior.
 #[derive(Default)]
 pub struct Parser {
     info: ParserInfo,
 }
 
 impl Parser {
+    /// Create a new `Parser` instance using the provided `ParserInfo`.
+    /// 
+    /// This method allows you to set up a parser to handle different
+    /// names for days of the week, months, etc., enabling customization
+    /// for different languages or extra values.
     pub fn new(info: ParserInfo) -> Self {
         Parser { info }
     }
 
+    /// Main method to trigger parsing of a string using the previously-provided
+    /// parser information. Returns a naive timestamp along with timezone and
+    /// unused tokens if available.
+    /// 
+    /// `dayfirst` and `yearfirst` force parser behavior in the event of ambiguous
+    /// dates. Consider the following scenarios where we parse the string '01.02.03'
+    /// 
+    /// - `dayfirst=Some(true)`, `yearfirst=None`: Results in `February 2, 2003`
+    /// - `dayfirst=None`, `yearfirst=Some(true)`: Results in `February 3, 2001`
+    /// - `dayfirst=Some(true)`, `yearfirst=Some(true)`: Results in `March 2, 2001`
+    /// 
+    /// `fuzzy` enables fuzzy parsing mode, allowing the parser to skip tokens if
+    /// they are unrecognized. However, the unused tokens will not be returned
+    /// unless `fuzzy_with_tokens` is set as `true`.
+    /// 
+    /// `default` is the timestamp used to infer missing values, and is midnight
+    /// of the current day by default. For example, when parsing the text '2003',
+    /// we will use the current month and day as a default value, leading to a
+    /// result of 'March 3, 2003' if the function was run using a default of
+    /// March 3rd.
+    /// 
+    /// `ignoretz` forces the parser to ignore timezone information even if it
+    /// is recognized in the time string
+    /// 
+    /// `tzinfos` is a map of timezone names to the offset seconds. For example,
+    /// the parser would ignore the 'EST' part of the string in '10 AM EST'
+    /// unless you added a `tzinfos` map of `{"EST": "14400"}`. Please note that
+    /// timezone name support (i.e. "EST", "BRST") is not available by default
+    /// at the moment, they must be added through `tzinfos` at the moment in
+    /// order to be resolved.
     pub fn parse(
         &mut self,
         timestr: &str,
@@ -1187,6 +1254,12 @@ fn ljust(s: &str, chars: usize, replace: char) -> String {
     }
 }
 
+/// Main entry point for using `dtparse`. The parse function is responsible for
+/// taking in a string representing some time value, and turning it into
+/// a timestamp with optional timezone information if it can be identified.
+/// 
+/// The default implementation assumes English values for names of months,
+/// days of the week, etc. It is equivalent to Python's `dateutil.parser.parse()`
 pub fn parse(timestr: &str) -> ParseResult<(NaiveDateTime, Option<FixedOffset>)> {
     let res = Parser::default().parse(
         timestr,
