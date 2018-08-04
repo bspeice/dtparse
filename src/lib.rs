@@ -184,18 +184,33 @@ pub fn parse_info(vec: Vec<Vec<&str>>) -> HashMap<String, usize> {
 /// and will be parsed as "YDM"
 #[derive(Debug, PartialEq)]
 pub struct ParserInfo {
-    jump: HashMap<String, usize>,
-    weekday: HashMap<String, usize>,
-    months: HashMap<String, usize>,
-    hms: HashMap<String, usize>,
-    ampm: HashMap<String, usize>,
-    utczone: HashMap<String, usize>,
-    pertain: HashMap<String, usize>,
-    tzoffset: HashMap<String, usize>,
-    dayfirst: bool,
-    yearfirst: bool,
-    year: i32,
-    century: i32,
+    /// Tokens that can be safely ignored
+    pub jump: HashMap<String, usize>,
+    /// Names of all seven weekdays
+    pub weekday: HashMap<String, usize>,
+    /// Names of all twelve months
+    pub months: HashMap<String, usize>,
+    /// Tokens to indicate a value is in units of hours, minutes, or seconds
+    pub hms: HashMap<String, usize>,
+    /// Tokens to indicate a value refers to AM or PM time
+    pub ampm: HashMap<String, usize>,
+    /// Tokens to indicate our timestamp is in the UTC timezone
+    pub utczone: HashMap<String, usize>,
+    /// Tokens to indicate values "belonging" to other tokens (e.g. 3rd *of* March)
+    pub pertain: HashMap<String, usize>,
+    /// Map of timezone names to their offset in seconds
+    pub tzoffset: HashMap<String, usize>,
+    /// For ambiguous year/month/day values, and `dayfirst` was not specified as
+    /// an argument to `Parser`, treat the first observed value as the day.
+    pub dayfirst: bool,
+    /// For ambiguous year/month/day values, and `dayfirst` was not specified as
+    /// an argument to `Parser`, treat the first observed value as the day.
+    /// Takes priority over `dayfirst`
+    pub yearfirst: bool,
+    /// The current year we are parsing values for
+    pub year: i32,
+    /// The current year we are parsing values for *modulo* 100
+    pub century: i32,
 }
 
 impl Default for ParserInfo {
@@ -252,23 +267,23 @@ impl Default for ParserInfo {
 }
 
 impl ParserInfo {
-    fn get_jump(&self, name: &str) -> bool {
+    fn jump_index(&self, name: &str) -> bool {
         self.jump.contains_key(&name.to_lowercase())
     }
 
-    fn get_weekday(&self, name: &str) -> Option<usize> {
+    fn weekday_index(&self, name: &str) -> Option<usize> {
         self.weekday.get(&name.to_lowercase()).map(|i| *i)
     }
 
-    fn get_month(&self, name: &str) -> Option<usize> {
+    fn month_index(&self, name: &str) -> Option<usize> {
         self.months.get(&name.to_lowercase()).map(|u| u + 1)
     }
 
-    fn get_hms(&self, name: &str) -> Option<usize> {
+    fn hms_index(&self, name: &str) -> Option<usize> {
         self.hms.get(&name.to_lowercase()).map(|i| *i)
     }
 
-    fn get_ampm(&self, name: &str) -> Option<bool> {
+    fn ampm_index(&self, name: &str) -> Option<bool> {
         if let Some(v) = self.ampm.get(&name.to_lowercase()) {
             // Python technically uses numbers here, but given that the numbers are
             // only 0 and 1, it's easier to use booleans
@@ -278,15 +293,15 @@ impl ParserInfo {
         }
     }
 
-    fn get_pertain(&self, name: &str) -> bool {
+    fn pertain_index(&self, name: &str) -> bool {
         self.pertain.contains_key(&name.to_lowercase())
     }
 
-    fn get_utczone(&self, name: &str) -> bool {
+    fn utczone_index(&self, name: &str) -> bool {
         self.utczone.contains_key(&name.to_lowercase())
     }
 
-    fn get_tzoffset(&self, name: &str) -> Option<usize> {
+    fn tzoffset_index(&self, name: &str) -> Option<usize> {
         if self.utczone.contains_key(&name.to_lowercase()) {
             Some(0)
         } else {
@@ -319,7 +334,7 @@ impl ParserInfo {
             res.tzname = Some("UTC".to_owned());
             res.tzoffset = Some(0);
         } else if res.tzoffset != Some(0) && res.tzname.is_some()
-            && self.get_utczone(res.tzname.as_ref().unwrap())
+            && self.utczone_index(res.tzname.as_ref().unwrap())
         {
             res.tzoffset = Some(0);
         }
@@ -709,9 +724,9 @@ impl Parser {
 
             if let Ok(_v) = Decimal::from_str(&value_repr) {
                 i = self.parse_numeric_token(&l, i, &self.info, &mut ymd, &mut res, fuzzy)?;
-            } else if let Some(value) = self.info.get_weekday(&l[i]) {
+            } else if let Some(value) = self.info.weekday_index(&l[i]) {
                 res.weekday = Some(value);
-            } else if let Some(value) = self.info.get_month(&l[i]) {
+            } else if let Some(value) = self.info.month_index(&l[i]) {
                 ymd.append(value as i32, &l[i], Some(YMDLabel::Month))?;
 
                 if i + 1 < len_l {
@@ -729,7 +744,7 @@ impl Parser {
 
                         i += 2;
                     } else if i + 4 < len_l && l[i + 1] == l[i + 3] && l[i + 3] == " "
-                        && self.info.get_pertain(&l[i + 2])
+                        && self.info.pertain_index(&l[i + 2])
                     {
                         // Jan of 01
                         if let Some(value) = l[i + 4].parse::<i32>().ok() {
@@ -740,7 +755,7 @@ impl Parser {
                         i += 4;
                     }
                 }
-            } else if let Some(value) = self.info.get_ampm(&l[i]) {
+            } else if let Some(value) = self.info.ampm_index(&l[i]) {
                 let is_ampm = self.ampm_valid(res.hour, res.ampm, fuzzy);
 
                 if is_ampm == Ok(true) {
@@ -753,7 +768,7 @@ impl Parser {
                 res.tzname = Some(l[i].clone());
 
                 let tzname = res.tzname.clone().unwrap();
-                res.tzoffset = self.info.get_tzoffset(&tzname).map(|t| t as i32);
+                res.tzoffset = self.info.tzoffset_index(&tzname).map(|t| t as i32);
 
                 if i + 1 < len_l && (l[i + 1] == "+" || l[i + 1] == "-") {
                     // GMT+3
@@ -771,7 +786,7 @@ impl Parser {
 
                     res.tzoffset = None;
 
-                    if self.info.get_utczone(&tzname) {
+                    if self.info.utczone_index(&tzname) {
                         res.tzname = None;
                     }
                 }
@@ -802,7 +817,7 @@ impl Parser {
                     Some(signal * (hour_offset.unwrap() * 3600 + min_offset.unwrap() * 60));
 
                 let tzname = res.tzname.clone();
-                if i + 5 < len_l && self.info.get_jump(&l[i + 2]) && l[i + 3] == "("
+                if i + 5 < len_l && self.info.jump_index(&l[i + 2]) && l[i + 3] == "("
                     && l[i + 5] == ")" && 3 <= l[i + 4].len()
                     && self.could_be_tzname(res.hour, tzname, None, &l[i + 4])
                 {
@@ -812,7 +827,7 @@ impl Parser {
                 }
 
                 i += 1;
-            } else if !(self.info.get_jump(&l[i]) || fuzzy) {
+            } else if !(self.info.jump_index(&l[i]) || fuzzy) {
                 return Err(ParseError::UnrecognizedToken(l[i].clone()));
             } else {
                 skipped_idxs.push(i);
@@ -970,7 +985,7 @@ impl Parser {
         // TODO: Decompose this logic a bit
         if ymd.len() == 3 && (len_li == 2 || len_li == 4) && res.hour.is_none()
             && (idx + 1 >= len_l
-                || (tokens[idx + 1] != ":" && info.get_hms(&tokens[idx + 1]).is_none()))
+                || (tokens[idx + 1] != ":" && info.hms_index(&tokens[idx + 1]).is_none()))
         {
             // 1990101T32[59]
             let s = &tokens[idx];
@@ -1045,15 +1060,15 @@ impl Parser {
             let sep = &tokens[idx + 1];
             ymd.append(value_repr.parse::<i32>().unwrap(), &value_repr, None)?;
 
-            if idx + 2 < len_l && !info.get_jump(&tokens[idx + 2]) {
+            if idx + 2 < len_l && !info.jump_index(&tokens[idx + 2]) {
                 if let Ok(val) = tokens[idx + 2].parse::<i32>() {
                     ymd.append(val, &tokens[idx + 2], None)?;
-                } else if let Some(val) = info.get_month(&tokens[idx + 2]) {
+                } else if let Some(val) = info.month_index(&tokens[idx + 2]) {
                     ymd.append(val as i32, &tokens[idx + 2], Some(YMDLabel::Month))?;
                 }
 
                 if idx + 3 < len_l && &tokens[idx + 3] == sep {
-                    if let Some(value) = info.get_month(&tokens[idx + 4]) {
+                    if let Some(value) = info.month_index(&tokens[idx + 4]) {
                         ymd.append(value as i32, &tokens[idx + 4], Some(YMDLabel::Month))?;
                     } else {
                         if let Ok(val) = tokens[idx + 4].parse::<i32>() {
@@ -1070,10 +1085,10 @@ impl Parser {
             }
 
             idx += 1
-        } else if idx + 1 >= len_l || info.get_jump(&tokens[idx + 1]) {
-            if idx + 2 < len_l && info.get_ampm(&tokens[idx + 2]).is_some() {
+        } else if idx + 1 >= len_l || info.jump_index(&tokens[idx + 1]) {
+            if idx + 2 < len_l && info.ampm_index(&tokens[idx + 2]).is_some() {
                 let hour = value.to_i64().unwrap() as i32;
-                let ampm = info.get_ampm(&tokens[idx + 2]).unwrap();
+                let ampm = info.ampm_index(&tokens[idx + 2]).unwrap();
                 res.hour = Some(self.adjust_ampm(hour, ampm));
                 idx += 1;
             } else {
@@ -1081,12 +1096,12 @@ impl Parser {
             }
 
             idx += 1;
-        } else if info.get_ampm(&tokens[idx + 1]).is_some()
+        } else if info.ampm_index(&tokens[idx + 1]).is_some()
             && (*ZERO <= value && value < *TWENTY_FOUR)
         {
             // 12am
             let hour = value.to_i64().unwrap() as i32;
-            res.hour = Some(self.adjust_ampm(hour, info.get_ampm(&tokens[idx + 1]).unwrap()));
+            res.hour = Some(self.adjust_ampm(hour, info.ampm_index(&tokens[idx + 1]).unwrap()));
             idx += 1;
         } else if ymd.could_be_day(value.to_i64().unwrap() as i32) {
             ymd.append(value.to_i64().unwrap() as i32, &value_repr, None)?;
@@ -1145,16 +1160,16 @@ impl Parser {
             0
         };
 
-        if idx + 1 < len_l && info.get_hms(&tokens[idx + 1]).is_some() {
+        if idx + 1 < len_l && info.hms_index(&tokens[idx + 1]).is_some() {
             hms_idx = Some(idx + 1)
         } else if allow_jump && idx + 2 < len_l && tokens[idx + 1] == " "
-            && info.get_hms(&tokens[idx + 2]).is_some()
+            && info.hms_index(&tokens[idx + 2]).is_some()
         {
             hms_idx = Some(idx + 2)
-        } else if idx > 0 && info.get_hms(&tokens[idx - 1]).is_some() {
+        } else if idx > 0 && info.hms_index(&tokens[idx - 1]).is_some() {
             hms_idx = Some(idx - 1)
         } else if len_l > 0 && idx > 0 && idx == len_l - 1 && tokens[idx - 1] == " "
-            && info.get_hms(&tokens[idx_minus_two]).is_some()
+            && info.hms_index(&tokens[idx_minus_two]).is_some()
         {
             hms_idx = Some(idx - 2)
         }
@@ -1174,12 +1189,12 @@ impl Parser {
         } else if hms_index.unwrap() > idx {
             (
                 hms_index.unwrap(),
-                info.get_hms(&tokens[hms_index.unwrap()]),
+                info.hms_index(&tokens[hms_index.unwrap()]),
             )
         } else {
             (
                 idx,
-                info.get_hms(&tokens[hms_index.unwrap()]).map(|u| u + 1),
+                info.hms_index(&tokens[hms_index.unwrap()]).map(|u| u + 1),
             )
         }
     }

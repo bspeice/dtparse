@@ -63,6 +63,7 @@ assert_eq!(
 );
 ```
 
-Further examples can be found in the `examples` directory on international usage.
+Further examples can be found in the [examples](examples) directory on international usage.
 
 [dateutil]: https://github.com/dateutil/dateutil
+[examples]: https://github.com/bspeice/dtparse/tree/master/examples
