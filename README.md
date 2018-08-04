@@ -2,29 +2,63 @@
 
 ![travisci](https://travis-ci.org/bspeice/dtparse.svg?branch=master)
 
-A [dateutil](https://github.com/dateutil/dateutil)-compatible timestamp parser for Rust
+The fully-featured "even I couldn't understand that" time parser.
+Designed to take in strings and give back sensible dates and times.
 
-## Where it stands
+dtparse has its foundations in the [`dateutil`](dateutil) library for
+Python, which excels at taking "interesting" strings and trying to make
+sense of the dates and times they contain. A couple of quick examples
+from the test cases should give some context:
 
-The library works really well at the moment, and passes the vast majority of `dateutil`s parser
-test suite. This isn't mission-critical ready, but is more than ready for hobbyist projects.
+```rust
+extern crate chrono;
+extern crate dtparse;
+use chrono::prelude::*;
+use dtparse::parse;
 
-The issues to be resolved before version 1.0:
+assert_eq!(
+    parse("2008.12.30"),
+    Ok((NaiveDate::from_ymd(2008, 12, 30).and_hms(0, 0, 0), None))
+);
 
-**Functionality**:
+// It can even handle timezones!
+assert_eq!(
+    parse("January 4, 2024; 18:30:04 +02:00"),
+    Ok((
+        NaiveDate::from_ymd(2024, 1, 4).and_hms(18, 30, 4),
+        Some(FixedOffset::east(7200))
+    ))
+);
+```
 
-1. ~~We don't support weekday parsing. In the Python side this is accomplished via `dateutil.relativedelta`~~
-Supported in v0.8
+And we can even handle fuzzy strings where dates/times aren't the
+only content if we dig into the implementation a bit!
 
-2. Named timezones aren't supported very well. [chrono_tz](https://github.com/chronotope/chrono-tz)
-theoretically would provide support, but I'd also like some helper things available (e.g. "EST" is not a named zone in `chrono-tz`).
-Explicit time zones (i.e. "00:00:00 -0300") are working as expected.
+```rust
+extern crate chrono;
+extern crate dtparse;
+use chrono::prelude::*;
+use dtparse::Parser;
+use std::collections::HashMap;
 
-3. ~~"Fuzzy" and "Fuzzy with tokens" modes haven't been tested. The code should work, but I need to get the
-test cases added to the auto-generation suite~~
+let mut p = Parser::default();
+assert_eq!(
+    p.parse(
+        "I first released this library on the 17th of June, 2018.",
+        None, None,
+        true /* turns on fuzzy mode */,
+        true /* gives us the tokens that weren't recognized */,
+        None, false, &HashMap::new()
+    ),
+    Ok((
+        NaiveDate::from_ymd(2018, 6, 17).and_hms(0, 0, 0),
+        None,
+        Some(vec!["I first released this library on the ",
+                  " of ", ", "].iter().map(|&s| s.into()).collect())
+    ))
+);
+```
 
-**Non-functional**: This library is intended to be a direct port from Python, and thus the code
-looks a lot more like Python than it does Rust. There are a ton of `TODO` comments in the code
-that need cleaned up, things that could be converted to enums, etc.
+Further examples can be found in the `examples` directory on international usage.
 
-In addition, some more documentation would be incredibly helpful. It's, uh, sparse at the moment.
+[dateutil]: https://github.com/dateutil/dateutil
