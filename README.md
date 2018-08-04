@@ -1,7 +1,10 @@
 # dtparse
 
-![travisci](https://travis-ci.org/bspeice/dtparse.svg?branch=master)
+[![travisci](https://travis-ci.org/bspeice/dtparse.svg?branch=master)](https://travis-ci.org/bspeice/dtparse)
 [![appveyor](https://ci.appveyor.com/api/projects/status/r4de76tg9utfjva1/branch/master?svg=true)](https://ci.appveyor.com/project/bspeice/dtparse/branch/master)
+[![crates.io](https://img.shields.io/crates/v/dtparse.svg)](https://crates.io/crates/dtparse)
+[![docs.rs](https://docs.rs/dtparse/badge.svg)](https://docs.rs/dtparse/)
+
 
 The fully-featured "even I couldn't understand that" time parser.
 Designed to take in strings and give back sensible dates and times.
