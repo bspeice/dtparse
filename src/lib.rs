@@ -10,7 +10,7 @@
 //! sense of the dates and times they contain. A couple of quick examples
 //! from the test cases should give some context:
 //! 
-//! ```rust
+//! ```rust,ignore (tests-dont-compile-on-old-rust)
 //! # extern crate chrono;
 //! # extern crate dtparse;
 //! use chrono::prelude::*;
@@ -34,7 +34,7 @@
 //! And we can even handle fuzzy strings where dates/times aren't the
 //! only content if we dig into the implementation a bit!
 //! 
-//! ```rust
+//! ```rust,ignore (tests-dont-compile-on-old-rust)
 //! # extern crate chrono;
 //! # extern crate dtparse;
 //! use chrono::prelude::*;

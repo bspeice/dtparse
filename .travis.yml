@@ -74,6 +74,23 @@ matrix:
       os: osx
       rust: beta
 
+    # Historical Rust versions
+    - env: TARGET=x86_64-unknown-linux-gnu
+      rust: 1.21.0
+    - env: TARGET=x86_64-unknown-linux-gnu
+      rust: 1.22.0
+    - env: TARGET=x86_64-unknown-linux-gnu
+      rust: 1.23.0
+    - env: TARGET=x86_64-unknown-linux-gnu
+      rust: 1.24.0
+    - env: TARGET=x86_64-unknown-linux-gnu
+      rust: 1.25.0
+    - env: TARGET=x86_64-unknown-linux-gnu
+      rust: 1.26.0
+    - env: TARGET=x86_64-unknown-linux-gnu
+      rust: 1.27.0
+    
+
 before_install:
   - set -e
   - rustup self update
