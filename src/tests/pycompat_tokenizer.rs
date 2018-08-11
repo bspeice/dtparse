@@ -708,20 +708,20 @@ fn test_tokenize115() {
 
 #[test]
 fn test_tokenize116() {
-    let comp = vec!["10", ":", "00", ":", "00", " ", "UTC", "+", "3"];
-    tokenize_assert("10:00:00 UTC+3", comp);
+    let comp = vec!["2018", "-", "08", "-", "10", " ", "10", ":", "00", ":", "00", " ", "UTC", "+", "3"];
+    tokenize_assert("2018-08-10 10:00:00 UTC+3", comp);
 }
 
 #[test]
 fn test_tokenize117() {
-    let comp = vec!["03", ":", "36", ":", "47", " ", "PM", " ", "GMT", "-", "4"];
-    tokenize_assert("03:36:47 PM GMT-4", comp);
+    let comp = vec!["2018", "-", "08", "-", "10", " ", "03", ":", "36", ":", "47", " ", "PM", " ", "GMT", "-", "4"];
+    tokenize_assert("2018-08-10 03:36:47 PM GMT-4", comp);
 }
 
 #[test]
 fn test_tokenize118() {
-    let comp = vec!["04", ":", "15", ":", "00", " ", "AM", " ", "Z", "-", "02", ":", "00"];
-    tokenize_assert("04:15:00 AM Z-02:00", comp);
+    let comp = vec!["2018", "-", "08", "-", "10", " ", "04", ":", "15", ":", "00", " ", "AM", " ", "Z", "-", "02", ":", "00"];
+    tokenize_assert("2018-08-10 04:15:00 AM Z-02:00", comp);
 }
 
 #[test]
