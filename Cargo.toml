@@ -1,6 +1,6 @@
 [package]
 name = "dtparse"
-version = "1.0.0"
+version = "1.0.1"
 authors = ["Bradlee Speice <bradlee@speice.io>"]
 description = "A dateutil-compatible timestamp parser for Rust"
 repository = "https://github.com/bspeice/dtparse.git"
@@ -18,6 +18,6 @@ name = "dtparse"
 
 [dependencies]
 chrono = "0.4"
-lazy_static = "1.0"
+lazy_static = "1.1"
 num-traits = "0.2"
-rust_decimal = "0.9"
+rust_decimal = "0.10"
