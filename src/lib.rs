@@ -147,6 +147,7 @@ pub(crate) fn tokenize(parse_string: &str) -> Vec<String> {
 
 /// Utility function for `ParserInfo` that helps in constructing
 /// the attributes that make up the `ParserInfo` container
+#[cfg_attr(feature = "cargo-clippy", allow(get_unwrap))] // Recommended suggestion of &vec[0] doesn't compile
 pub fn parse_info(vec: Vec<Vec<&str>>) -> HashMap<String, usize> {
     let mut m = HashMap::new();
 
@@ -156,7 +157,7 @@ pub fn parse_info(vec: Vec<Vec<&str>>) -> HashMap<String, usize> {
         }
     } else {
         for (i, val_vec) in vec.into_iter().enumerate() {
-            for val in val_vec.into_iter() {
+            for val in val_vec {
                 m.insert(val.to_lowercase(), i);
             }
         }
@@ -260,8 +261,8 @@ impl Default for ParserInfo {
             tzoffset: parse_info(vec![vec![]]),
             dayfirst: false,
             yearfirst: false,
-            year: year,
-            century: century,
+            year,
+            century,
         }
     }
 }
@@ -272,7 +273,7 @@ impl ParserInfo {
     }
 
     fn weekday_index(&self, name: &str) -> Option<usize> {
-        self.weekday.get(&name.to_lowercase()).map(|i| *i)
+        self.weekday.get(&name.to_lowercase()).cloned()
     }
 
     fn month_index(&self, name: &str) -> Option<usize> {
@@ -280,7 +281,7 @@ impl ParserInfo {
     }
 
     fn hms_index(&self, name: &str) -> Option<usize> {
-        self.hms.get(&name.to_lowercase()).map(|i| *i)
+        self.hms.get(&name.to_lowercase()).cloned()
     }
 
     fn ampm_index(&self, name: &str) -> Option<bool> {
@@ -477,7 +478,7 @@ impl YMD {
                 YMDLabel::Day
             };
 
-            let strids_vals: Vec<usize> = strids.values().map(|u| u.clone()).collect();
+            let strids_vals: Vec<usize> = strids.values().cloned().collect();
             let missing_val = if !strids_vals.contains(&0) {
                 0
             } else if !strids_vals.contains(&1) {
@@ -506,6 +507,7 @@ impl YMD {
         ))
     }
 
+    #[cfg_attr(feature = "cargo-clippy", allow(needless_return))]
     fn resolve_ymd(
         &mut self,
         yearfirst: bool,
@@ -515,14 +517,14 @@ impl YMD {
 
         let mut strids: HashMap<YMDLabel, usize> = HashMap::new();
         self.ystridx
-            .map(|u| strids.insert(YMDLabel::Year, u.clone()));
+            .map(|u| strids.insert(YMDLabel::Year, u));
         self.mstridx
-            .map(|u| strids.insert(YMDLabel::Month, u.clone()));
+            .map(|u| strids.insert(YMDLabel::Month, u));
         self.dstridx
-            .map(|u| strids.insert(YMDLabel::Day, u.clone()));
+            .map(|u| strids.insert(YMDLabel::Day, u));
 
         // TODO: More Rustiomatic way of doing this?
-        if len_ymd == strids.len() && strids.len() > 0
+        if len_ymd == strids.len() && !strids.is_empty()
             || (len_ymd == 3 && strids.len() == 2)
         {
             return self.resolve_from_stridxs(&mut strids);
@@ -660,6 +662,7 @@ impl Parser {
     /// timezone name support (i.e. "EST", "BRST") is not available by default
     /// at the moment, they must be added through `tzinfos` at the moment in
     /// order to be resolved.
+    #[cfg_attr(feature = "cargo-clippy", allow(too_many_arguments))] // Need to release a 2.0 for changing public API
     pub fn parse(
         &mut self,
         timestr: &str,
@@ -688,6 +691,7 @@ impl Parser {
         }
     }
 
+    #[cfg_attr(feature = "cargo-clippy", allow(cyclomatic_complexity))] // Imitating Python API is priority
     fn parse_with_tokens(
         &mut self,
         timestr: &str,
@@ -747,7 +751,7 @@ impl Parser {
                         && self.info.pertain_index(&l[i + 2])
                     {
                         // Jan of 01
-                        if let Some(value) = l[i + 4].parse::<i32>().ok() {
+                        if let Ok(value) = l[i + 4].parse::<i32>() {
                             let year = self.info.convertyear(value, false);
                             ymd.append(year, &l[i + 4], Some(YMDLabel::Year))?;
                         }
@@ -764,7 +768,7 @@ impl Parser {
                 } else if fuzzy {
                     skipped_idxs.push(i);
                 }
-            } else if self.could_be_tzname(res.hour, res.tzname.clone(), res.tzoffset, &l[i]) {
+            } else if self.could_be_tzname(res.hour, &res.tzname, res.tzoffset, &l[i]) {
                 res.tzname = Some(l[i].clone());
 
                 let tzname = res.tzname.clone().unwrap();
@@ -779,10 +783,9 @@ impl Parser {
                     let item = if l[i + 1] == "+" {
                         "-".to_owned()
                     } else {
-                        "-".to_owned()
+                        "+".to_owned()
                     };
-                    l.remove(i + 1);
-                    l.insert(i + 1, item);
+                    l[i+1] = item;
 
                     res.tzoffset = None;
 
@@ -809,7 +812,8 @@ impl Parser {
                     i += 2;
                 } else if len_li <= 2 {
                     // -[0]3
-                    hour_offset = Some(l[i + 1][..2].parse::<i32>().unwrap());
+                    let range_len = min(l[i + 1].len(), 2);
+                    hour_offset = Some(l[i + 1][..range_len].parse::<i32>().unwrap());
                     min_offset = Some(0);
                 }
 
@@ -819,7 +823,7 @@ impl Parser {
                 let tzname = res.tzname.clone();
                 if i + 5 < len_l && self.info.jump_index(&l[i + 2]) && l[i + 3] == "("
                     && l[i + 5] == ")" && 3 <= l[i + 4].len()
-                    && self.could_be_tzname(res.hour, tzname, None, &l[i + 4])
+                    && self.could_be_tzname(res.hour, &tzname, None, &l[i + 4])
                 {
                     // (GMT)
                     res.tzname = Some(l[i + 4].clone());
@@ -856,23 +860,20 @@ impl Parser {
     fn could_be_tzname(
         &self,
         hour: Option<i32>,
-        tzname: Option<String>,
+        tzname: &Option<String>,
         tzoffset: Option<i32>,
         token: &str,
     ) -> bool {
         let all_ascii_upper = token
             .chars()
             .all(|c| 65u8 as char <= c && c <= 90u8 as char);
-        return hour.is_some() && tzname.is_none() && tzoffset.is_none() && token.len() <= 5
-            && all_ascii_upper;
+
+        hour.is_some() && tzname.is_none() && tzoffset.is_none() && token.len() <= 5
+            && all_ascii_upper
     }
 
     fn ampm_valid(&self, hour: Option<i32>, ampm: Option<bool>, fuzzy: bool) -> ParseResult<bool> {
-        let mut val_is_ampm = true;
-
-        if fuzzy && ampm.is_some() {
-            val_is_ampm = false;
-        }
+        let mut val_is_ampm = !(fuzzy && ampm.is_some());
 
         if hour.is_none() {
             if fuzzy {
@@ -892,8 +893,8 @@ impl Parser {
     }
 
     fn build_naive(&self, res: &ParsingResult, default: &NaiveDateTime) -> ParseResult<NaiveDateTime> {
-        let y = res.year.unwrap_or(default.year());
-        let m = res.month.unwrap_or(default.month() as i32) as u32;
+        let y = res.year.unwrap_or_else(|| default.year());
+        let m = res.month.unwrap_or_else(|| default.month() as i32) as u32;
 
         let d_offset = if res.weekday.is_some() && res.day.is_none() {
             // TODO: Unwrap not justified
@@ -902,7 +903,7 @@ impl Parser {
             // UNWRAP: We've already check res.weekday() is some
             let actual_weekday = (res.weekday.unwrap() + 1) % 7;
             let other = DayOfWeek::from_numeral(actual_weekday as u32);
-            Duration::days(dow.difference(other) as i64)
+            Duration::days(i64::from(dow.difference(&other)))
         } else {
             Duration::days(0)
         };
@@ -946,6 +947,7 @@ impl Parser {
     ) -> ParseResult<Option<FixedOffset>> {
         // TODO: Actual timezone support
         if let Some(offset) = res.tzoffset {
+            println!("offset={}", offset);
             Ok(Some(FixedOffset::east(offset)))
         } else if res.tzoffset == None
             && (res.tzname == Some(" ".to_owned()) || res.tzname == Some(".".to_owned())
@@ -954,7 +956,7 @@ impl Parser {
             Ok(None)
         } else if res.tzname.is_some() && tzinfos.contains_key(res.tzname.as_ref().unwrap()) {
             Ok(Some(FixedOffset::east(
-                tzinfos.get(res.tzname.as_ref().unwrap()).unwrap().clone(),
+                *tzinfos.get(res.tzname.as_ref().unwrap()).unwrap(),
             )))
         } else if res.tzname.is_some() {
             // TODO: Dateutil issues a warning/deprecation notice here. Should we force the issue?
@@ -967,7 +969,7 @@ impl Parser {
 
     fn parse_numeric_token(
         &self,
-        tokens: &Vec<String>,
+        tokens: &[String],
         idx: usize,
         info: &ParserInfo,
         ymd: &mut YMD,
@@ -994,11 +996,11 @@ impl Parser {
             if len_li == 4 {
                 res.minute = Some(s[2..4].parse::<i32>()?)
             }
-        } else if len_li == 6 || (len_li > 6 && tokens[idx].find(".") == Some(6)) {
+        } else if len_li == 6 || (len_li > 6 && tokens[idx].find('.') == Some(6)) {
             // YYMMDD or HHMMSS[.ss]
             let s = &tokens[idx];
 
-            if ymd.len() == 0 && tokens[idx].find(".") == None {
+            if ymd.len() == 0 && tokens[idx].find('.') == None {
                 ymd.append(s[0..2].parse::<i32>().unwrap(), &s[0..2], None)?;
                 ymd.append(s[2..4].parse::<i32>().unwrap(), &s[2..4], None)?;
                 ymd.append(s[4..6].parse::<i32>().unwrap(), &s[4..6], None)?;
@@ -1070,13 +1072,11 @@ impl Parser {
                 if idx + 3 < len_l && &tokens[idx + 3] == sep {
                     if let Some(value) = info.month_index(&tokens[idx + 4]) {
                         ymd.append(value as i32, &tokens[idx + 4], Some(YMDLabel::Month))?;
-                    } else {
-                        if let Ok(val) = tokens[idx + 4].parse::<i32>() {
+                    } else if let Ok(val) = tokens[idx + 4].parse::<i32>() {
                             ymd.append(val, &tokens[idx + 4], None)?;
                         } else {
                             return Err(ParseError::UnrecognizedFormat);
                         }
-                    }
 
                     idx += 2;
                 }
@@ -1123,8 +1123,8 @@ impl Parser {
     }
 
     fn parsems(&self, seconds_str: &str) -> ParseResult<(i32, i32)> {
-        if seconds_str.contains(".") {
-            let split: Vec<&str> = seconds_str.split(".").collect();
+        if seconds_str.contains('.') {
+            let split: Vec<&str> = seconds_str.split('.').collect();
             let (i, f): (&str, &str) = (split[0], split[1]);
 
             let i_parse = i.parse::<i32>()?;
@@ -1138,7 +1138,7 @@ impl Parser {
     fn find_hms_index(
         &self,
         idx: usize,
-        tokens: &Vec<String>,
+        tokens: &[String],
         info: &ParserInfo,
         allow_jump: bool,
     ) -> Option<usize> {
@@ -1180,7 +1180,7 @@ impl Parser {
     fn parse_hms(
         &self,
         idx: usize,
-        tokens: &Vec<String>,
+        tokens: &[String],
         info: &ParserInfo,
         hms_index: Option<usize>,
     ) -> (usize, Option<usize>) {
@@ -1236,6 +1236,7 @@ impl Parser {
         (minute, second)
     }
 
+    #[cfg_attr(feature = "cargo-clippy", allow(needless_pass_by_value))] // Need Vec type because of mutability in the function that calls us
     fn recombine_skipped(&self, skipped_idxs: Vec<usize>, tokens: Vec<String>) -> Vec<String> {
         let mut skipped_tokens: Vec<String> = vec![];
 
@@ -1246,10 +1247,10 @@ impl Parser {
             if i > 0 && idx - 1 == skipped_idxs[i - 1] {
                 // UNWRAP: Having an initial value and unconditional push at end guarantees value
                 let mut t = skipped_tokens.pop().unwrap();
-                t.push_str(tokens[idx.clone()].as_ref());
+                t.push_str(tokens[*idx].as_ref());
                 skipped_tokens.push(t);
             } else {
-                skipped_tokens.push(tokens[idx.clone()].to_owned());
+                skipped_tokens.push(tokens[*idx].to_owned());
             }
         }
 

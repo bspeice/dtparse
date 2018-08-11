@@ -1,4 +1,5 @@
 from dateutil.parser import parse
+from dateutil.tz import tzutc
 from datetime import datetime
 
 tests = {
@@ -48,7 +49,9 @@ tests = {
     'test_parse_offset': [
         'Thu, 25 Sep 2003 10:49:41 -0300', '2003-09-25T10:49:41.5-03:00',
         '2003-09-25T10:49:41-03:00', '20030925T104941.5-0300',
-        '20030925T104941-0300'
+        '20030925T104941-0300',
+        # dtparse-specific
+        "10:00:00 UTC+3", "03:36:47 PM GMT-4", "04:15:00 AM Z-02:00"
     ],
     'test_parse_dayfirst': [
         '10-09-2003', '10.09.2003', '10/09/2003', '10 09 2003',

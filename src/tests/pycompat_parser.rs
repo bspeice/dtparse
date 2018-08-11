@@ -1435,6 +1435,42 @@ fn test_parse_offset4() {
 }
 
 #[test]
+fn test_parse_offset5() {
+    let info = ParserInfo::default();
+    let pdt = PyDateTime {
+        year: 2018, month: 8, day: 10,
+        hour: 10, minute: 0, second: 0,
+        micros: 0, tzo: Some(-10800),
+    };
+    parse_and_assert(pdt, info, "10:00:00 UTC+3", None, None, false, false,
+                     None, false, &HashMap::new());
+}
+
+#[test]
+fn test_parse_offset6() {
+    let info = ParserInfo::default();
+    let pdt = PyDateTime {
+        year: 2018, month: 8, day: 10,
+        hour: 15, minute: 36, second: 47,
+        micros: 0, tzo: Some(14400),
+    };
+    parse_and_assert(pdt, info, "03:36:47 PM GMT-4", None, None, false, false,
+                     None, false, &HashMap::new());
+}
+
+#[test]
+fn test_parse_offset7() {
+    let info = ParserInfo::default();
+    let pdt = PyDateTime {
+        year: 2018, month: 8, day: 10,
+        hour: 4, minute: 15, second: 0,
+        micros: 0, tzo: Some(7200),
+    };
+    parse_and_assert(pdt, info, "04:15:00 AM Z-02:00", None, None, false, false,
+                     None, false, &HashMap::new());
+}
+
+#[test]
 fn test_parse_dayfirst0() {
     let info = ParserInfo::default();
     let pdt = PyDateTime {

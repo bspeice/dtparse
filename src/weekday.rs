@@ -15,14 +15,14 @@ pub enum DayOfWeek {
 impl DayOfWeek {
 
     pub fn to_numeral(&self) -> u32 {
-        match self {
-            &DayOfWeek::Sunday => 0,
-            &DayOfWeek::Monday => 1,
-            &DayOfWeek::Tuesday => 2,
-            &DayOfWeek::Wednesday => 3,
-            &DayOfWeek::Thursday => 4,
-            &DayOfWeek::Friday => 5,
-            &DayOfWeek::Saturday => 6,
+        match *self {
+            DayOfWeek::Sunday => 0,
+            DayOfWeek::Monday => 1,
+            DayOfWeek::Tuesday => 2,
+            DayOfWeek::Wednesday => 3,
+            DayOfWeek::Thursday => 4,
+            DayOfWeek::Friday => 5,
+            DayOfWeek::Saturday => 6,
         }
     }
 
@@ -40,7 +40,7 @@ impl DayOfWeek {
     }
 
     /// Given the current day of the week, how many days until the next day?
-    pub fn difference(&self, other: DayOfWeek) -> u32 {
+    pub fn difference(&self, other: &DayOfWeek) -> u32 {
         // Have to use i32 because of wraparound issues
         let s_num = self.to_numeral() as i32;
         let o_num = other.to_numeral() as i32;
@@ -115,18 +115,18 @@ mod test {
     #[test]
     fn weekday_difference() {
 
-        assert_eq!(DayOfWeek::Sunday.difference(DayOfWeek::Sunday), 0);
-        assert_eq!(DayOfWeek::Sunday.difference(DayOfWeek::Monday), 1);
-        assert_eq!(DayOfWeek::Sunday.difference(DayOfWeek::Tuesday), 2);
-        assert_eq!(DayOfWeek::Sunday.difference(DayOfWeek::Wednesday), 3);
-        assert_eq!(DayOfWeek::Sunday.difference(DayOfWeek::Thursday), 4);
-        assert_eq!(DayOfWeek::Sunday.difference(DayOfWeek::Friday), 5);
-        assert_eq!(DayOfWeek::Sunday.difference(DayOfWeek::Saturday), 6);
-        assert_eq!(DayOfWeek::Monday.difference(DayOfWeek::Sunday), 6);
-        assert_eq!(DayOfWeek::Tuesday.difference(DayOfWeek::Sunday), 5);
-        assert_eq!(DayOfWeek::Wednesday.difference(DayOfWeek::Sunday), 4);
-        assert_eq!(DayOfWeek::Thursday.difference(DayOfWeek::Sunday), 3);
-        assert_eq!(DayOfWeek::Friday.difference(DayOfWeek::Sunday), 2);
-        assert_eq!(DayOfWeek::Saturday.difference(DayOfWeek::Sunday), 1);
+        assert_eq!(DayOfWeek::Sunday.difference(&DayOfWeek::Sunday), 0);
+        assert_eq!(DayOfWeek::Sunday.difference(&DayOfWeek::Monday), 1);
+        assert_eq!(DayOfWeek::Sunday.difference(&DayOfWeek::Tuesday), 2);
+        assert_eq!(DayOfWeek::Sunday.difference(&DayOfWeek::Wednesday), 3);
+        assert_eq!(DayOfWeek::Sunday.difference(&DayOfWeek::Thursday), 4);
+        assert_eq!(DayOfWeek::Sunday.difference(&DayOfWeek::Friday), 5);
+        assert_eq!(DayOfWeek::Sunday.difference(&DayOfWeek::Saturday), 6);
+        assert_eq!(DayOfWeek::Monday.difference(&DayOfWeek::Sunday), 6);
+        assert_eq!(DayOfWeek::Tuesday.difference(&DayOfWeek::Sunday), 5);
+        assert_eq!(DayOfWeek::Wednesday.difference(&DayOfWeek::Sunday), 4);
+        assert_eq!(DayOfWeek::Thursday.difference(&DayOfWeek::Sunday), 3);
+        assert_eq!(DayOfWeek::Friday.difference(&DayOfWeek::Sunday), 2);
+        assert_eq!(DayOfWeek::Saturday.difference(&DayOfWeek::Sunday), 1);
     }
 }

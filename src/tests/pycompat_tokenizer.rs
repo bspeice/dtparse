@@ -708,198 +708,216 @@ fn test_tokenize115() {
 
 #[test]
 fn test_tokenize116() {
+    let comp = vec!["10", ":", "00", ":", "00", " ", "UTC", "+", "3"];
+    tokenize_assert("10:00:00 UTC+3", comp);
+}
+
+#[test]
+fn test_tokenize117() {
+    let comp = vec!["03", ":", "36", ":", "47", " ", "PM", " ", "GMT", "-", "4"];
+    tokenize_assert("03:36:47 PM GMT-4", comp);
+}
+
+#[test]
+fn test_tokenize118() {
+    let comp = vec!["04", ":", "15", ":", "00", " ", "AM", " ", "Z", "-", "02", ":", "00"];
+    tokenize_assert("04:15:00 AM Z-02:00", comp);
+}
+
+#[test]
+fn test_tokenize119() {
     let comp = vec!["10", "-", "09", "-", "2003"];
     tokenize_assert("10-09-2003", comp);
 }
 
 #[test]
-fn test_tokenize117() {
+fn test_tokenize120() {
     let comp = vec!["10", ".", "09", ".", "2003"];
     tokenize_assert("10.09.2003", comp);
 }
 
 #[test]
-fn test_tokenize118() {
+fn test_tokenize121() {
     let comp = vec!["10", "/", "09", "/", "2003"];
     tokenize_assert("10/09/2003", comp);
 }
 
 #[test]
-fn test_tokenize119() {
+fn test_tokenize122() {
     let comp = vec!["10", " ", "09", " ", "2003"];
     tokenize_assert("10 09 2003", comp);
 }
 
 #[test]
-fn test_tokenize120() {
+fn test_tokenize123() {
     let comp = vec!["090107"];
     tokenize_assert("090107", comp);
 }
 
 #[test]
-fn test_tokenize121() {
+fn test_tokenize124() {
     let comp = vec!["2015", " ", "09", " ", "25"];
     tokenize_assert("2015 09 25", comp);
 }
 
 #[test]
-fn test_tokenize122() {
+fn test_tokenize125() {
     let comp = vec!["10", "-", "09", "-", "03"];
     tokenize_assert("10-09-03", comp);
 }
 
 #[test]
-fn test_tokenize123() {
+fn test_tokenize126() {
     let comp = vec!["10", ".", "09", ".", "03"];
     tokenize_assert("10.09.03", comp);
 }
 
 #[test]
-fn test_tokenize124() {
+fn test_tokenize127() {
     let comp = vec!["10", "/", "09", "/", "03"];
     tokenize_assert("10/09/03", comp);
 }
 
 #[test]
-fn test_tokenize125() {
+fn test_tokenize128() {
     let comp = vec!["10", " ", "09", " ", "03"];
     tokenize_assert("10 09 03", comp);
 }
 
 #[test]
-fn test_tokenize126() {
-    let comp = vec!["090107"];
-    tokenize_assert("090107", comp);
-}
-
-#[test]
-fn test_tokenize127() {
-    let comp = vec!["2015", " ", "09", " ", "25"];
-    tokenize_assert("2015 09 25", comp);
-}
-
-#[test]
-fn test_tokenize128() {
-    let comp = vec!["090107"];
-    tokenize_assert("090107", comp);
-}
-
-#[test]
 fn test_tokenize129() {
-    let comp = vec!["2015", " ", "09", " ", "25"];
-    tokenize_assert("2015 09 25", comp);
+    let comp = vec!["090107"];
+    tokenize_assert("090107", comp);
 }
 
 #[test]
 fn test_tokenize130() {
+    let comp = vec!["2015", " ", "09", " ", "25"];
+    tokenize_assert("2015 09 25", comp);
+}
+
+#[test]
+fn test_tokenize131() {
+    let comp = vec!["090107"];
+    tokenize_assert("090107", comp);
+}
+
+#[test]
+fn test_tokenize132() {
+    let comp = vec!["2015", " ", "09", " ", "25"];
+    tokenize_assert("2015 09 25", comp);
+}
+
+#[test]
+fn test_tokenize133() {
     let comp = vec!["April", " ", "2009"];
     tokenize_assert("April 2009", comp);
 }
 
 #[test]
-fn test_tokenize131() {
+fn test_tokenize134() {
     let comp = vec!["Feb", " ", "2007"];
     tokenize_assert("Feb 2007", comp);
 }
 
 #[test]
-fn test_tokenize132() {
+fn test_tokenize135() {
     let comp = vec!["Feb", " ", "2008"];
     tokenize_assert("Feb 2008", comp);
 }
 
 #[test]
-fn test_tokenize133() {
+fn test_tokenize136() {
     let comp = vec!["Thu", " ", "Sep", " ", "25", " ", "10", ":", "36", ":", "28", " ", "BRST", " ", "2003"];
     tokenize_assert("Thu Sep 25 10:36:28 BRST 2003", comp);
 }
 
 #[test]
-fn test_tokenize134() {
+fn test_tokenize137() {
     let comp = vec!["1996", ".", "07", ".", "10", " ", "AD", " ", "at", " ", "15", ":", "08", ":", "56", " ", "PDT"];
     tokenize_assert("1996.07.10 AD at 15:08:56 PDT", comp);
 }
 
 #[test]
-fn test_tokenize135() {
+fn test_tokenize138() {
     let comp = vec!["Tuesday", ",", " ", "April", " ", "12", ",", " ", "1952", " ", "AD", " ", "3", ":", "30", ":", "42", "pm", " ", "PST"];
     tokenize_assert("Tuesday, April 12, 1952 AD 3:30:42pm PST", comp);
 }
 
 #[test]
-fn test_tokenize136() {
+fn test_tokenize139() {
     let comp = vec!["November", " ", "5", ",", " ", "1994", ",", " ", "8", ":", "15", ":", "30", " ", "am", " ", "EST"];
     tokenize_assert("November 5, 1994, 8:15:30 am EST", comp);
 }
 
 #[test]
-fn test_tokenize137() {
+fn test_tokenize140() {
     let comp = vec!["1994", "-", "11", "-", "05", "T", "08", ":", "15", ":", "30", "-", "05", ":", "00"];
     tokenize_assert("1994-11-05T08:15:30-05:00", comp);
 }
 
 #[test]
-fn test_tokenize138() {
+fn test_tokenize141() {
     let comp = vec!["1994", "-", "11", "-", "05", "T", "08", ":", "15", ":", "30", "Z"];
     tokenize_assert("1994-11-05T08:15:30Z", comp);
 }
 
 #[test]
-fn test_tokenize139() {
+fn test_tokenize142() {
     let comp = vec!["1976", "-", "07", "-", "04", "T", "00", ":", "01", ":", "02", "Z"];
     tokenize_assert("1976-07-04T00:01:02Z", comp);
 }
 
 #[test]
-fn test_tokenize140() {
+fn test_tokenize143() {
     let comp = vec!["Tue", " ", "Apr", " ", "4", " ", "00", ":", "22", ":", "12", " ", "PDT", " ", "1995"];
     tokenize_assert("Tue Apr 4 00:22:12 PDT 1995", comp);
 }
 
 #[test]
-fn test_tokenize141() {
+fn test_tokenize144() {
     let comp = vec!["Today", " ", "is", " ", "25", " ", "of", " ", "September", " ", "of", " ", "2003", ",", " ", "exactly", " ", "at", " ", "10", ":", "49", ":", "41", " ", "with", " ", "timezone", " ", "-", "03", ":", "00", "."];
     tokenize_assert("Today is 25 of September of 2003, exactly at 10:49:41 with timezone -03:00.", comp);
 }
 
 #[test]
-fn test_tokenize142() {
+fn test_tokenize145() {
     let comp = vec!["Today", " ", "is", " ", "25", " ", "of", " ", "September", " ", "of", " ", "2003", ",", " ", "exactly", " ", "at", " ", "10", ":", "49", ":", "41", " ", "with", " ", "timezone", " ", "-", "03", ":", "00", "."];
     tokenize_assert("Today is 25 of September of 2003, exactly at 10:49:41 with timezone -03:00.", comp);
 }
 
 #[test]
-fn test_tokenize143() {
+fn test_tokenize146() {
     let comp = vec!["I", " ", "have", " ", "a", " ", "meeting", " ", "on", " ", "March", " ", "1", ",", " ", "1974"];
     tokenize_assert("I have a meeting on March 1, 1974", comp);
 }
 
 #[test]
-fn test_tokenize144() {
+fn test_tokenize147() {
     let comp = vec!["On", " ", "June", " ", "8", "th", ",", " ", "2020", ",", " ", "I", " ", "am", " ", "going", " ", "to", " ", "be", " ", "the", " ", "first", " ", "man", " ", "on", " ", "Mars"];
     tokenize_assert("On June 8th, 2020, I am going to be the first man on Mars", comp);
 }
 
 #[test]
-fn test_tokenize145() {
+fn test_tokenize148() {
     let comp = vec!["Meet", " ", "me", " ", "at", " ", "the", " ", "AM", "/", "PM", " ", "on", " ", "Sunset", " ", "at", " ", "3", ":", "00", " ", "AM", " ", "on", " ", "December", " ", "3", "rd", ",", " ", "2003"];
     tokenize_assert("Meet me at the AM/PM on Sunset at 3:00 AM on December 3rd, 2003", comp);
 }
 
 #[test]
-fn test_tokenize146() {
+fn test_tokenize149() {
     let comp = vec!["Meet", " ", "me", " ", "at", " ", "3", ":", "00", " ", "AM", " ", "on", " ", "December", " ", "3", "rd", ",", " ", "2003", " ", "at", " ", "the", " ", "AM", "/", "PM", " ", "on", " ", "Sunset"];
     tokenize_assert("Meet me at 3:00 AM on December 3rd, 2003 at the AM/PM on Sunset", comp);
 }
 
 #[test]
-fn test_tokenize147() {
+fn test_tokenize150() {
     let comp = vec!["Jan", " ", "29", ",", " ", "1945", " ", "14", ":", "45", " ", "AM", " ", "I", " ", "going", " ", "to", " ", "see", " ", "you", " ", "there", "?"];
     tokenize_assert("Jan 29, 1945 14:45 AM I going to see you there?", comp);
 }
 
 #[test]
-fn test_tokenize148() {
+fn test_tokenize151() {
     let comp = vec!["2017", "-", "07", "-", "17", " ", "06", ":", "15", ":"];
     tokenize_assert("2017-07-17 06:15:", comp);
 }
