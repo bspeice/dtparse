@@ -93,7 +93,7 @@ matrix:
       rust: 1.27.0
 
     # WASM support
-    - env: TARGET=asmjs-unknown-empscripten USE_CARGO_WEB=true
+    - env: TARGET=asmjs-unknown-emscripten USE_CARGO_WEB=true
       rust: nightly
     
 
