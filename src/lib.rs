@@ -60,6 +60,12 @@
 //! ```
 //! 
 //! Further examples can be found in the `examples` directory on international usage.
+//!
+//! # Usage
+//!
+//! `dtparse` requires a minimum Rust version of 1.21 to build, but is tested on Windows, OSX,
+//! BSD, Linux, and WASM. The build is also compiled against the iOS and Android SDK's, but is not
+//! tested against them.
 //! 
 //! [dateutil]: https://github.com/dateutil/dateutil
 
