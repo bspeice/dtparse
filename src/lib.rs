@@ -108,6 +108,7 @@ lazy_static! {
     static ref ONE: Decimal = Decimal::new(1, 0);
     static ref TWENTY_FOUR: Decimal = Decimal::new(24, 0);
     static ref SIXTY: Decimal = Decimal::new(60, 0);
+    static ref DEFAULT_PARSER: Parser = Parser::default();
 }
 
 impl From<DecimalError> for ParseError {
@@ -670,7 +671,7 @@ impl Parser {
     /// order to be resolved.
     #[cfg_attr(feature = "cargo-clippy", allow(too_many_arguments))] // Need to release a 2.0 for changing public API
     pub fn parse(
-        &mut self,
+        &self,
         timestr: &str,
         dayfirst: Option<bool>,
         yearfirst: Option<bool>,
@@ -699,7 +700,7 @@ impl Parser {
 
     #[cfg_attr(feature = "cargo-clippy", allow(cyclomatic_complexity))] // Imitating Python API is priority
     fn parse_with_tokens(
-        &mut self,
+        &self,
         timestr: &str,
         dayfirst: Option<bool>,
         yearfirst: Option<bool>,
@@ -953,7 +954,6 @@ impl Parser {
     ) -> ParseResult<Option<FixedOffset>> {
         // TODO: Actual timezone support
         if let Some(offset) = res.tzoffset {
-            println!("offset={}", offset);
             Ok(Some(FixedOffset::east(offset)))
         } else if res.tzoffset == None
             && (res.tzname == Some(" ".to_owned()) || res.tzname == Some(".".to_owned())
@@ -1283,7 +1283,7 @@ fn ljust(s: &str, chars: usize, replace: char) -> String {
 /// The default implementation assumes English values for names of months,
 /// days of the week, etc. It is equivalent to Python's `dateutil.parser.parse()`
 pub fn parse(timestr: &str) -> ParseResult<(NaiveDateTime, Option<FixedOffset>)> {
-    let res = Parser::default().parse(
+    let res = DEFAULT_PARSER.parse(
         timestr,
         None,
         None,

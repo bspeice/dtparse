@@ -39,7 +39,7 @@ fn parse_and_assert(
     tzinfos: &HashMap<String, i32>,
 ) {
 
-    let mut parser = Parser::new(info);
+    let parser = Parser::new(info);
     let rs_parsed = parser.parse(
         s,
         dayfirst,
@@ -89,7 +89,7 @@ fn parse_fuzzy_and_assert(
     tzinfos: &HashMap<String, i32>,
 ) {
 
-    let mut parser = Parser::new(info);
+    let parser = Parser::new(info);
     let rs_parsed = parser.parse(
         s,
         dayfirst,

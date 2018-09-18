@@ -16,7 +16,7 @@ fn test_fuzz() {
     // OverflowError: Python int too large to convert to C long
     // assert_eq!(parse("8888884444444888444444444881"), Err(ParseError::AmPmWithoutHour));
     let default = NaiveDate::from_ymd(2016, 6, 29).and_hms(0, 0, 0);
-    let mut p = Parser::default();
+    let p = Parser::default();
     let res = p.parse("\x0D\x31", None, None, false, false, Some(&default), false, &HashMap::new()).unwrap();
     assert_eq!(res.0, default);
 

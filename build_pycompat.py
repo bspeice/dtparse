@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 from dateutil.parser import parse
 from dateutil.tz import tzutc
 from datetime import datetime
@@ -232,7 +233,7 @@ fn parse_and_assert(
     tzinfos: &HashMap<String, i32>,
 ) {
 
-    let mut parser = Parser::new(info);
+    let parser = Parser::new(info);
     let rs_parsed = parser.parse(
         s,
         dayfirst,
@@ -282,7 +283,7 @@ fn parse_fuzzy_and_assert(
     tzinfos: &HashMap<String, i32>,
 ) {
 
-    let mut parser = Parser::new(info);
+    let parser = Parser::new(info);
     let rs_parsed = parser.parse(
         s,
         dayfirst,

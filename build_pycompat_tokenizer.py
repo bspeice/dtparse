@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 from dateutil.parser import _timelex
 
 from build_pycompat import tests
