@@ -29,7 +29,7 @@ fn main() {
         vec!["дек", "Декабрь"]
     ]);
 
-    let mut p = Parser::new(info);
+    let p = Parser::new(info);
 
     assert_eq!(
         p.parse("10 Сентябрь 2015 10:20", None, None, false, false, None, false, &HashMap::new())
