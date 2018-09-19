@@ -1,3 +1,11 @@
+Version 1.0.3 (2018-09-18)
+==========================
+
+Misc
+----
+
+- Changed the default `parse` function to use a static parser
+
 Version 1.0.2 (2018-08-14)
 ==========================
 
