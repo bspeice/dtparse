@@ -8,7 +8,6 @@ use dtparse::ParserInfo;
 use std::collections::HashMap;
 
 fn main() {
-
     // In this example, we'll just swap the default "months" parameter
     // with a version in Russian. Lovingly taken from:
     // https://github.com/dateutil/dateutil/blob/99f5770e7c63aa049b28abe465d7f1cc25b63fd2/dateutil/test/test_parser.py#L244
@@ -26,14 +25,24 @@ fn main() {
         vec!["сен", "Сентябрь"],
         vec!["окт", "Октябрь"],
         vec!["ноя", "Ноябрь"],
-        vec!["дек", "Декабрь"]
+        vec!["дек", "Декабрь"],
     ]);
 
     let p = Parser::new(info);
 
     assert_eq!(
-        p.parse("10 Сентябрь 2015 10:20", None, None, false, false, None, false, &HashMap::new())
-            .unwrap().0,
+        p.parse(
+            "10 Сентябрь 2015 10:20",
+            None,
+            None,
+            false,
+            false,
+            None,
+            false,
+            &HashMap::new()
+        )
+        .unwrap()
+        .0,
         NaiveDate::from_ymd(2015, 9, 10).and_hms(10, 20, 0)
     );
 }

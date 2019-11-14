@@ -4,23 +4,23 @@
 //! # dtparse
 //! The fully-featured "even I couldn't understand that" time parser.
 //! Designed to take in strings and give back sensible dates and times.
-//! 
+//!
 //! dtparse has its foundations in the [`dateutil`](dateutil) library for
 //! Python, which excels at taking "interesting" strings and trying to make
 //! sense of the dates and times they contain. A couple of quick examples
 //! from the test cases should give some context:
-//! 
+//!
 //! ```rust,ignore (tests-dont-compile-on-old-rust)
 //! # extern crate chrono;
 //! # extern crate dtparse;
 //! use chrono::prelude::*;
 //! use dtparse::parse;
-//! 
+//!
 //! assert_eq!(
 //!     parse("2008.12.30"),
 //!     Ok((NaiveDate::from_ymd(2008, 12, 30).and_hms(0, 0, 0), None))
 //! );
-//! 
+//!
 //! // It can even handle timezones!
 //! assert_eq!(
 //!     parse("January 4, 2024; 18:30:04 +02:00"),
@@ -30,17 +30,17 @@
 //!     ))
 //! );
 //! ```
-//! 
+//!
 //! And we can even handle fuzzy strings where dates/times aren't the
 //! only content if we dig into the implementation a bit!
-//! 
+//!
 //! ```rust,ignore (tests-dont-compile-on-old-rust)
 //! # extern crate chrono;
 //! # extern crate dtparse;
 //! use chrono::prelude::*;
 //! use dtparse::Parser;
 //! # use std::collections::HashMap;
-//! 
+//!
 //! let mut p = Parser::default();
 //! assert_eq!(
 //!     p.parse(
@@ -58,7 +58,7 @@
 //!     ))
 //! );
 //! ```
-//! 
+//!
 //! Further examples can be found in the `examples` directory on international usage.
 //!
 //! # Usage
@@ -66,7 +66,7 @@
 //! `dtparse` requires a minimum Rust version of 1.21 to build, but is tested on Windows, OSX,
 //! BSD, Linux, and WASM. The build is also compiled against the iOS and Android SDK's, but is not
 //! tested against them.
-//! 
+//!
 //! [dateutil]: https://github.com/dateutil/dateutil
 
 #[macro_use]
@@ -85,14 +85,14 @@ use chrono::NaiveDate;
 use chrono::NaiveDateTime;
 use chrono::NaiveTime;
 use chrono::Offset;
-use chrono::Timelike;
 use chrono::TimeZone;
+use chrono::Timelike;
 use chrono_tz::Tz;
 use num_traits::cast::ToPrimitive;
 use rust_decimal::Decimal;
 use rust_decimal::Error as DecimalError;
-use std::collections::HashMap;
 use std::cmp::min;
+use std::collections::HashMap;
 use std::num::ParseIntError;
 use std::str::FromStr;
 use std::vec::Vec;
@@ -178,7 +178,7 @@ pub fn parse_info(vec: Vec<Vec<&str>>) -> HashMap<String, usize> {
 }
 
 /// Container for specific tokens to be recognized during parsing.
-/// 
+///
 /// - `jump`: Values that indicate the end of a token for parsing and can be ignored
 /// - `weekday`: Names of the days of the week
 /// - `months`: Names of the months
@@ -191,7 +191,7 @@ pub fn parse_info(vec: Vec<Vec<&str>>) -> HashMap<String, usize> {
 /// - `yearfirst`: Upon encountering an ambiguous date, treat the first value as the year
 /// - `year`: The current year
 /// - `century`: The first year in the current century
-/// 
+///
 /// Please note that if both `dayfirst` and `yearfirst` are true, years take precedence
 /// and will be parsed as "YDM"
 #[derive(Debug, PartialEq)]
@@ -232,12 +232,10 @@ impl Default for ParserInfo {
         let century = year / 100 * 100;
 
         ParserInfo {
-            jump: parse_info(vec![
-                vec![
-                    " ", ".", ",", ";", "-", "/", "'", "at", "on", "and", "ad", "m", "t", "of",
-                    "st", "nd", "rd", "th",
-                ],
-            ]),
+            jump: parse_info(vec![vec![
+                " ", ".", ",", ";", "-", "/", "'", "at", "on", "and", "ad", "m", "t", "of", "st",
+                "nd", "rd", "th",
+            ]]),
             weekday: parse_info(vec![
                 vec!["Mon", "Monday"],
                 vec!["Tue", "Tues", "Tuesday"],
@@ -345,7 +343,8 @@ impl ParserInfo {
         if res.tzoffset == Some(0) && res.tzname.is_none() || res.tzname == Some("Z".to_owned()) {
             res.tzname = Some("UTC".to_owned());
             res.tzoffset = Some(0);
-        } else if res.tzoffset != Some(0) && res.tzname.is_some()
+        } else if res.tzoffset != Some(0)
+            && res.tzname.is_some()
             && self.utczone_index(res.tzname.as_ref().unwrap())
         {
             res.tzoffset = Some(0);
@@ -362,16 +361,16 @@ fn days_in_month(year: i32, month: i32) -> Result<u32, ParseError> {
     };
 
     match month {
-        2 => if leap_year {
-            Ok(29)
-        } else {
-            Ok(28)
-        },
+        2 => {
+            if leap_year {
+                Ok(29)
+            } else {
+                Ok(28)
+            }
+        }
         1 | 3 | 5 | 7 | 8 | 10 | 12 => Ok(31),
         4 | 6 | 9 | 11 => Ok(30),
-        _ => {
-            Err(ParseError::ImpossibleTimestamp("Invalid month"))
-        }
+        _ => Err(ParseError::ImpossibleTimestamp("Invalid month")),
     }
 }
 
@@ -425,9 +424,7 @@ impl YMD {
                 Some(YMDLabel::Month) => {
                     return Err(ParseError::ImpossibleTimestamp("Invalid month"))
                 }
-                Some(YMDLabel::Day) => {
-                    return Err(ParseError::ImpossibleTimestamp("Invalid day"))
-                }
+                Some(YMDLabel::Day) => return Err(ParseError::ImpossibleTimestamp("Invalid day")),
             }
         }
 
@@ -439,9 +436,7 @@ impl YMD {
                 Some(YMDLabel::Month) => {
                     return Err(ParseError::ImpossibleTimestamp("Invalid month"))
                 }
-                Some(YMDLabel::Day) => {
-                    return Err(ParseError::ImpossibleTimestamp("Invalid day"))
-                }
+                Some(YMDLabel::Day) => return Err(ParseError::ImpossibleTimestamp("Invalid day")),
             }
         }
 
@@ -502,19 +497,15 @@ impl YMD {
         }
 
         if self._ymd.len() != strids.len() {
-            return Err(ParseError::YearMonthDayError("Tried to resolve year, month, and day without enough information"));
+            return Err(ParseError::YearMonthDayError(
+                "Tried to resolve year, month, and day without enough information",
+            ));
         }
 
         Ok((
-            strids
-                .get(&YMDLabel::Year)
-                .map(|i| self._ymd[*i]),
-            strids
-                .get(&YMDLabel::Month)
-                .map(|i| self._ymd[*i]),
-            strids
-                .get(&YMDLabel::Day)
-                .map(|i| self._ymd[*i]),
+            strids.get(&YMDLabel::Year).map(|i| self._ymd[*i]),
+            strids.get(&YMDLabel::Month).map(|i| self._ymd[*i]),
+            strids.get(&YMDLabel::Day).map(|i| self._ymd[*i]),
         ))
     }
 
@@ -527,28 +518,24 @@ impl YMD {
         let len_ymd = self._ymd.len();
 
         let mut strids: HashMap<YMDLabel, usize> = HashMap::new();
-        self.ystridx
-            .map(|u| strids.insert(YMDLabel::Year, u));
-        self.mstridx
-            .map(|u| strids.insert(YMDLabel::Month, u));
-        self.dstridx
-            .map(|u| strids.insert(YMDLabel::Day, u));
+        self.ystridx.map(|u| strids.insert(YMDLabel::Year, u));
+        self.mstridx.map(|u| strids.insert(YMDLabel::Month, u));
+        self.dstridx.map(|u| strids.insert(YMDLabel::Day, u));
 
         // TODO: More Rustiomatic way of doing this?
-        if len_ymd == strids.len() && !strids.is_empty()
-            || (len_ymd == 3 && strids.len() == 2)
-        {
+        if len_ymd == strids.len() && !strids.is_empty() || (len_ymd == 3 && strids.len() == 2) {
             return self.resolve_from_stridxs(&mut strids);
         };
 
         // Received year, month, day, and ???
         if len_ymd > 3 {
-            return Err(ParseError::YearMonthDayError("Received extra tokens in resolving year, month, and day"));
+            return Err(ParseError::YearMonthDayError(
+                "Received extra tokens in resolving year, month, and day",
+            ));
         }
 
         match (len_ymd, self.mstridx) {
-            (1, Some(val)) |
-            (2, Some(val)) => {
+            (1, Some(val)) | (2, Some(val)) => {
                 let other = if len_ymd == 1 {
                     self._ymd[0]
                 } else {
@@ -558,7 +545,7 @@ impl YMD {
                     return Ok((Some(other), Some(self._ymd[val]), None));
                 }
                 return Ok((None, Some(self._ymd[val]), Some(other)));
-            },
+            }
             (2, None) => {
                 if self._ymd[0] > 31 {
                     return Ok((Some(self._ymd[0]), Some(self._ymd[1]), None));
@@ -570,28 +557,29 @@ impl YMD {
                     return Ok((None, Some(self._ymd[1]), Some(self._ymd[0])));
                 }
                 return Ok((None, Some(self._ymd[0]), Some(self._ymd[1])));
-            },
+            }
             (3, Some(0)) => {
                 if self._ymd[1] > 31 {
                     return Ok((Some(self._ymd[1]), Some(self._ymd[0]), Some(self._ymd[2])));
                 }
                 return Ok((Some(self._ymd[2]), Some(self._ymd[0]), Some(self._ymd[1])));
-            },
+            }
             (3, Some(1)) => {
                 if self._ymd[0] > 31 || (yearfirst && self._ymd[2] <= 31) {
                     return Ok((Some(self._ymd[0]), Some(self._ymd[1]), Some(self._ymd[2])));
                 }
                 return Ok((Some(self._ymd[2]), Some(self._ymd[1]), Some(self._ymd[0])));
-            },
+            }
             (3, Some(2)) => {
                 // It was in the original docs, so: WTF!?
                 if self._ymd[1] > 31 {
                     return Ok((Some(self._ymd[2]), Some(self._ymd[1]), Some(self._ymd[0])));
                 }
                 return Ok((Some(self._ymd[0]), Some(self._ymd[2]), Some(self._ymd[1])));
-            },
+            }
             (3, None) => {
-                if self._ymd[0] > 31 || self.ystridx == Some(0)
+                if self._ymd[0] > 31
+                    || self.ystridx == Some(0)
                     || (yearfirst && self._ymd[1] <= 12 && self._ymd[2] <= 31)
                 {
                     if dayfirst && self._ymd[2] <= 12 {
@@ -602,8 +590,10 @@ impl YMD {
                     return Ok((Some(self._ymd[2]), Some(self._ymd[1]), Some(self._ymd[0])));
                 }
                 return Ok((Some(self._ymd[2]), Some(self._ymd[0]), Some(self._ymd[1])));
-            },
-            (_, _) => { return Ok((None, None, None)); },
+            }
+            (_, _) => {
+                return Ok((None, None, None));
+            }
         }
     }
 }
@@ -635,7 +625,7 @@ pub struct Parser {
 
 impl Parser {
     /// Create a new `Parser` instance using the provided `ParserInfo`.
-    /// 
+    ///
     /// This method allows you to set up a parser to handle different
     /// names for days of the week, months, etc., enabling customization
     /// for different languages or extra values.
@@ -646,27 +636,27 @@ impl Parser {
     /// Main method to trigger parsing of a string using the previously-provided
     /// parser information. Returns a naive timestamp along with timezone and
     /// unused tokens if available.
-    /// 
+    ///
     /// `dayfirst` and `yearfirst` force parser behavior in the event of ambiguous
     /// dates. Consider the following scenarios where we parse the string '01.02.03'
-    /// 
+    ///
     /// - `dayfirst=Some(true)`, `yearfirst=None`: Results in `February 2, 2003`
     /// - `dayfirst=None`, `yearfirst=Some(true)`: Results in `February 3, 2001`
     /// - `dayfirst=Some(true)`, `yearfirst=Some(true)`: Results in `March 2, 2001`
-    /// 
+    ///
     /// `fuzzy` enables fuzzy parsing mode, allowing the parser to skip tokens if
     /// they are unrecognized. However, the unused tokens will not be returned
     /// unless `fuzzy_with_tokens` is set as `true`.
-    /// 
+    ///
     /// `default` is the timestamp used to infer missing values, and is midnight
     /// of the current day by default. For example, when parsing the text '2003',
     /// we will use the current month and day as a default value, leading to a
     /// result of 'March 3, 2003' if the function was run using a default of
     /// March 3rd.
-    /// 
+    ///
     /// `ignoretz` forces the parser to ignore timezone information even if it
     /// is recognized in the time string
-    /// 
+    ///
     /// `tzinfos` is a map of timezone names to the offset seconds. For example,
     /// the parser would ignore the 'EST' part of the string in '10 AM EST'
     /// unless you added a `tzinfos` map of `{"EST": "14400"}`. Please note that
@@ -758,7 +748,9 @@ impl Parser {
                         }
 
                         i += 2;
-                    } else if i + 4 < len_l && l[i + 1] == l[i + 3] && l[i + 3] == " "
+                    } else if i + 4 < len_l
+                        && l[i + 1] == l[i + 3]
+                        && l[i + 3] == " "
                         && self.info.pertain_index(&l[i + 2])
                     {
                         // Jan of 01
@@ -796,7 +788,7 @@ impl Parser {
                     } else {
                         "+".to_owned()
                     };
-                    l[i+1] = item;
+                    l[i + 1] = item;
 
                     res.tzoffset = None;
 
@@ -832,8 +824,11 @@ impl Parser {
                     Some(signal * (hour_offset.unwrap() * 3600 + min_offset.unwrap() * 60));
 
                 let tzname = res.tzname.clone();
-                if i + 5 < len_l && self.info.jump_index(&l[i + 2]) && l[i + 3] == "("
-                    && l[i + 5] == ")" && 3 <= l[i + 4].len()
+                if i + 5 < len_l
+                    && self.info.jump_index(&l[i + 2])
+                    && l[i + 3] == "("
+                    && l[i + 5] == ")"
+                    && 3 <= l[i + 4].len()
                     && self.could_be_tzname(res.hour, &tzname, None, &l[i + 4])
                 {
                     // (GMT)
@@ -879,7 +874,10 @@ impl Parser {
             .chars()
             .all(|c| 65u8 as char <= c && c <= 90u8 as char);
 
-        hour.is_some() && tzname.is_none() && tzoffset.is_none() && token.len() <= 5
+        hour.is_some()
+            && tzname.is_none()
+            && tzoffset.is_none()
+            && token.len() <= 5
             && all_ascii_upper
     }
 
@@ -903,7 +901,11 @@ impl Parser {
         Ok(val_is_ampm)
     }
 
-    fn build_naive(&self, res: &ParsingResult, default: &NaiveDateTime) -> ParseResult<NaiveDateTime> {
+    fn build_naive(
+        &self,
+        res: &ParsingResult,
+        default: &NaiveDateTime,
+    ) -> ParseResult<NaiveDateTime> {
         let y = res.year.unwrap_or_else(|| default.year());
         let m = res.month.unwrap_or_else(|| default.month() as i32) as u32;
 
@@ -923,7 +925,10 @@ impl Parser {
         let d = NaiveDate::from_ymd(
             y,
             m,
-            min(res.day.unwrap_or(default.day() as i32) as u32, days_in_month(y, m as i32)?)
+            min(
+                res.day.unwrap_or(default.day() as i32) as u32,
+                days_in_month(y, m as i32)?,
+            ),
         );
 
         let d = d + d_offset;
@@ -931,21 +936,23 @@ impl Parser {
         let hour = res.hour.unwrap_or(default.hour() as i32) as u32;
         let minute = res.minute.unwrap_or(default.minute() as i32) as u32;
         let second = res.second.unwrap_or(default.second() as i32) as u32;
-        let microsecond = res.microsecond
+        let microsecond = res
+            .microsecond
             .unwrap_or(default.timestamp_subsec_micros() as i32) as u32;
-        let t = NaiveTime::from_hms_micro_opt(hour, minute, second, microsecond).ok_or_else(|| {
-            if hour >= 24 {
-                ParseError::ImpossibleTimestamp("Invalid hour")
-            } else if minute >= 60 {
-                ParseError::ImpossibleTimestamp("Invalid minute")
-            } else if second >= 60 {
-                ParseError::ImpossibleTimestamp("Invalid second")
-            } else if microsecond >= 2_000_000 {
-                ParseError::ImpossibleTimestamp("Invalid microsecond")
-            } else {
-                unreachable!();
-            }
-        })?;
+        let t =
+            NaiveTime::from_hms_micro_opt(hour, minute, second, microsecond).ok_or_else(|| {
+                if hour >= 24 {
+                    ParseError::ImpossibleTimestamp("Invalid hour")
+                } else if minute >= 60 {
+                    ParseError::ImpossibleTimestamp("Invalid minute")
+                } else if second >= 60 {
+                    ParseError::ImpossibleTimestamp("Invalid second")
+                } else if microsecond >= 2_000_000 {
+                    ParseError::ImpossibleTimestamp("Invalid microsecond")
+                } else {
+                    unreachable!();
+                }
+            })?;
 
         Ok(NaiveDateTime::new(d, t))
     }
@@ -959,8 +966,10 @@ impl Parser {
         if let Some(offset) = res.tzoffset {
             Ok(Some(FixedOffset::east(offset)))
         } else if res.tzoffset == None
-            && (res.tzname == Some(" ".to_owned()) || res.tzname == Some(".".to_owned())
-                || res.tzname == Some("-".to_owned()) || res.tzname == None)
+            && (res.tzname == Some(" ".to_owned())
+                || res.tzname == Some(".".to_owned())
+                || res.tzname == Some("-".to_owned())
+                || res.tzname == None)
         {
             Ok(None)
         } else if res.tzname.is_some() && tzinfos.contains_key(res.tzname.as_ref().unwrap()) {
@@ -1000,7 +1009,9 @@ impl Parser {
 
         // TODO: I miss the `x in y` syntax
         // TODO: Decompose this logic a bit
-        if ymd.len() == 3 && (len_li == 2 || len_li == 4) && res.hour.is_none()
+        if ymd.len() == 3
+            && (len_li == 2 || len_li == 4)
+            && res.hour.is_none()
             && (idx + 1 >= len_l
                 || (tokens[idx + 1] != ":" && info.hms_index(&tokens[idx + 1]).is_none()))
         {
@@ -1031,7 +1042,11 @@ impl Parser {
         } else if vec![8, 12, 14].contains(&len_li) {
             // YYMMDD
             let s = &tokens[idx];
-            ymd.append(s[..4].parse::<i32>().unwrap(), &s[..4], Some(YMDLabel::Year))?;
+            ymd.append(
+                s[..4].parse::<i32>().unwrap(),
+                &s[..4],
+                Some(YMDLabel::Year),
+            )?;
             ymd.append(s[4..6].parse::<i32>().unwrap(), &s[4..6], None)?;
             ymd.append(s[6..8].parse::<i32>().unwrap(), &s[6..8], None)?;
 
@@ -1088,10 +1103,10 @@ impl Parser {
                     if let Some(value) = info.month_index(&tokens[idx + 4]) {
                         ymd.append(value as i32, &tokens[idx + 4], Some(YMDLabel::Month))?;
                     } else if let Ok(val) = tokens[idx + 4].parse::<i32>() {
-                            ymd.append(val, &tokens[idx + 4], None)?;
-                        } else {
-                            return Err(ParseError::UnrecognizedFormat);
-                        }
+                        ymd.append(val, &tokens[idx + 4], None)?;
+                    } else {
+                        return Err(ParseError::UnrecognizedFormat);
+                    }
 
                     idx += 2;
                 }
@@ -1169,7 +1184,7 @@ impl Parser {
             len_l - 2
         } else if idx > 1 {
             idx - 2
-        } else if len_l == 0{
+        } else if len_l == 0 {
             panic!("Attempting to find_hms_index() wih no tokens.");
         } else {
             0
@@ -1177,13 +1192,18 @@ impl Parser {
 
         if idx + 1 < len_l && info.hms_index(&tokens[idx + 1]).is_some() {
             hms_idx = Some(idx + 1)
-        } else if allow_jump && idx + 2 < len_l && tokens[idx + 1] == " "
+        } else if allow_jump
+            && idx + 2 < len_l
+            && tokens[idx + 1] == " "
             && info.hms_index(&tokens[idx + 2]).is_some()
         {
             hms_idx = Some(idx + 2)
         } else if idx > 0 && info.hms_index(&tokens[idx - 1]).is_some() {
             hms_idx = Some(idx - 1)
-        } else if len_l > 0 && idx > 0 && idx == len_l - 1 && tokens[idx - 1] == " "
+        } else if len_l > 0
+            && idx > 0
+            && idx == len_l - 1
+            && tokens[idx - 1] == " "
             && info.hms_index(&tokens[idx_minus_two]).is_some()
         {
             hms_idx = Some(idx - 2)
@@ -1288,7 +1308,7 @@ fn ljust(s: &str, chars: usize, replace: char) -> String {
 /// Main entry point for using `dtparse`. The parse function is responsible for
 /// taking in a string representing some time value, and turning it into
 /// a timestamp with optional timezone information if it can be identified.
-/// 
+///
 /// The default implementation assumes English values for names of months,
 /// days of the week, etc. It is equivalent to Python's `dateutil.parser.parse()`
 pub fn parse(timestr: &str) -> ParseResult<(NaiveDateTime, Option<FixedOffset>)> {

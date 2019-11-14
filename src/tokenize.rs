@@ -14,7 +14,6 @@ pub(crate) enum ParseState {
 }
 
 impl Tokenizer {
-
     pub(crate) fn new(parse_string: &str) -> Self {
         Tokenizer {
             token_stack: vec![],
@@ -92,7 +91,7 @@ impl Iterator for Tokenizer {
                     } else {
                         break;
                     }
-                },
+                }
                 ParseState::Alpha => {
                     seenletters = true;
                     if self.isword(nextchar) {
@@ -105,19 +104,21 @@ impl Iterator for Tokenizer {
                         self.parse_string.push(nextchar);
                         break;
                     }
-                },
+                }
                 ParseState::Numeric => {
                     if self.isnum(nextchar) {
                         // UNWRAP: Because we're in non-empty parse state, we're guaranteed to have a token
                         token.as_mut().unwrap().push(nextchar);
-                    } else if nextchar == '.' || (nextchar == ',' && token.as_ref().unwrap().len() >= 2) {
+                    } else if nextchar == '.'
+                        || (nextchar == ',' && token.as_ref().unwrap().len() >= 2)
+                    {
                         token.as_mut().unwrap().push(nextchar);
                         state = ParseState::NumericDecimal;
                     } else {
                         self.parse_string.push(nextchar);
                         break;
                     }
-                },
+                }
                 ParseState::AlphaDecimal => {
                     seenletters = true;
                     if nextchar == '.' || self.isword(nextchar) {
@@ -130,7 +131,7 @@ impl Iterator for Tokenizer {
                         self.parse_string.push(nextchar);
                         break;
                     }
-                },
+                }
                 ParseState::NumericDecimal => {
                     if nextchar == '.' || self.isnum(nextchar) {
                         // UNWRAP: Because we're in non-empty parse state, we're guaranteed to have a token
@@ -150,20 +151,25 @@ impl Iterator for Tokenizer {
         // We do something slightly different to express the same logic
         if state == ParseState::AlphaDecimal || state == ParseState::NumericDecimal {
             // UNWRAP: The state check guarantees that we have a value
-            let dot_count = token.as_ref().unwrap().chars().filter(|c| *c == '.').count();
+            let dot_count = token
+                .as_ref()
+                .unwrap()
+                .chars()
+                .filter(|c| *c == '.')
+                .count();
             let last_char = token.as_ref().unwrap().chars().last();
             let last_splittable = last_char == Some('.') || last_char == Some(',');
-    
+
             if seenletters || dot_count > 1 || last_splittable {
                 let mut l = self.decimal_split(token.as_ref().unwrap());
                 let remaining = l.split_off(1);
-    
+
                 token = Some(l[0].clone());
                 for t in remaining {
                     self.token_stack.push(t);
                 }
             }
-    
+
             if state == ParseState::NumericDecimal && dot_count == 0 {
                 token = Some(token.unwrap().replace(',', "."));
             }

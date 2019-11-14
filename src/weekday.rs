@@ -1,5 +1,5 @@
-use ParseResult;
 use ParseError;
+use ParseResult;
 
 #[derive(Debug, PartialEq)]
 pub enum DayOfWeek {
@@ -9,11 +9,10 @@ pub enum DayOfWeek {
     Wednesday,
     Thursday,
     Friday,
-    Saturday
+    Saturday,
 }
 
 impl DayOfWeek {
-
     pub fn to_numeral(&self) -> u32 {
         match *self {
             DayOfWeek::Sunday => 0,
@@ -35,7 +34,7 @@ impl DayOfWeek {
             4 => DayOfWeek::Thursday,
             5 => DayOfWeek::Friday,
             6 => DayOfWeek::Saturday,
-            _ => panic!("Unreachable.")
+            _ => panic!("Unreachable."),
         }
     }
 
@@ -59,12 +58,12 @@ pub fn day_of_week(year: u32, month: u32, day: u32) -> ParseResult<DayOfWeek> {
         3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 => {
             let c = year / 100;
             (c, year - 100 * c)
-        },
+        }
         1 | 2 => {
             let c = (year - 1) / 100;
             (c, year - 1 - 100 * c)
-        },
-        _ => return Err(ParseError::ImpossibleTimestamp("Invalid month"))
+        }
+        _ => return Err(ParseError::ImpossibleTimestamp("Invalid month")),
     };
 
     let e = match month {
@@ -75,7 +74,7 @@ pub fn day_of_week(year: u32, month: u32, day: u32) -> ParseResult<DayOfWeek> {
         8 => 1,
         9 | 12 => 4,
         10 => 6,
-        _ => panic!("Unreachable.")
+        _ => panic!("Unreachable."),
     };
 
     // This implementation is Gregorian-only.
@@ -84,7 +83,7 @@ pub fn day_of_week(year: u32, month: u32, day: u32) -> ParseResult<DayOfWeek> {
         1 => 5,
         2 => 3,
         3 => 1,
-        _ => panic!("Unreachable.")
+        _ => panic!("Unreachable."),
     };
 
     match (day + e + f + g + g / 4) % 7 {
@@ -95,7 +94,7 @@ pub fn day_of_week(year: u32, month: u32, day: u32) -> ParseResult<DayOfWeek> {
         4 => Ok(DayOfWeek::Thursday),
         5 => Ok(DayOfWeek::Friday),
         6 => Ok(DayOfWeek::Saturday),
-        _ => panic!("Unreachable.")
+        _ => panic!("Unreachable."),
     }
 }
 
@@ -114,7 +113,6 @@ mod test {
 
     #[test]
     fn weekday_difference() {
-
         assert_eq!(DayOfWeek::Sunday.difference(&DayOfWeek::Sunday), 0);
         assert_eq!(DayOfWeek::Sunday.difference(&DayOfWeek::Monday), 1);
         assert_eq!(DayOfWeek::Sunday.difference(&DayOfWeek::Tuesday), 2);
