@@ -73,6 +73,7 @@
 extern crate lazy_static;
 
 extern crate chrono;
+extern crate chrono_tz;
 extern crate num_traits;
 extern crate rust_decimal;
 
@@ -83,7 +84,10 @@ use chrono::Local;
 use chrono::NaiveDate;
 use chrono::NaiveDateTime;
 use chrono::NaiveTime;
+use chrono::Offset;
 use chrono::Timelike;
+use chrono::TimeZone;
+use chrono_tz::Tz;
 use num_traits::cast::ToPrimitive;
 use rust_decimal::Decimal;
 use rust_decimal::Error as DecimalError;
@@ -948,11 +952,10 @@ impl Parser {
 
     fn build_tzaware(
         &self,
-        _dt: &NaiveDateTime,
+        dt: &NaiveDateTime,
         res: &ParsingResult,
         tzinfos: &HashMap<String, i32>,
     ) -> ParseResult<Option<FixedOffset>> {
-        // TODO: Actual timezone support
         if let Some(offset) = res.tzoffset {
             Ok(Some(FixedOffset::east(offset)))
         } else if res.tzoffset == None
@@ -965,9 +968,15 @@ impl Parser {
                 *tzinfos.get(res.tzname.as_ref().unwrap()).unwrap(),
             )))
         } else if res.tzname.is_some() {
-            // TODO: Dateutil issues a warning/deprecation notice here. Should we force the issue?
-            println!("tzname {} identified but not understood. Ignoring for the time being, but behavior is subject to change.", res.tzname.as_ref().unwrap());
-            Ok(None)
+            let tzname = res.tzname.as_ref().unwrap();
+            let tz: Result<Tz, String> = tzname.parse();
+            if tz.is_ok() {
+                let offset = tz.unwrap().offset_from_local_datetime(dt).unwrap().fix();
+                Ok(Some(offset))
+            } else {
+                println!("tzname {} identified but not understood ({}). Ignoring for the time being, but behavior is subject to change.", tzname, tz.unwrap_err());
+                Ok(None)
+            }
         } else {
             Err(ParseError::TimezoneUnsupported)
         }
