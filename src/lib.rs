@@ -63,7 +63,7 @@
 //!
 //! # Usage
 //!
-//! `dtparse` requires a minimum Rust version of 1.21 to build, but is tested on Windows, OSX,
+//! `dtparse` requires a minimum Rust version of 1.28 to build, but is tested on Windows, OSX,
 //! BSD, Linux, and WASM. The build is also compiled against the iOS and Android SDK's, but is not
 //! tested against them.
 //!
