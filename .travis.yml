@@ -80,11 +80,6 @@ matrix:
     - env: TARGET=x86_64-unknown-linux-gnu
       rust: 1.28.0
 
-    # WASM support
-    - env: TARGET=asmjs-unknown-emscripten USE_CARGO_WEB=true
-      rust: nightly
-    
-
 before_install:
   - set -e
   - rustup self update
