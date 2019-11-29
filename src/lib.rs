@@ -84,10 +84,7 @@ use chrono::Local;
 use chrono::NaiveDate;
 use chrono::NaiveDateTime;
 use chrono::NaiveTime;
-use chrono::Offset;
-use chrono::TimeZone;
 use chrono::Timelike;
-use chrono_tz::Tz;
 use num_traits::cast::ToPrimitive;
 use rust_decimal::Decimal;
 use rust_decimal::Error as DecimalError;
@@ -976,7 +973,7 @@ impl Parser {
             Ok(Some(FixedOffset::east(
                 *tzinfos.get(res.tzname.as_ref().unwrap()).unwrap(),
             )))
-        } else if res.tzname.is_some() {
+        } else if let Some(tzname) = res.tzname.as_ref() {
             println!("tzname {} identified but not understood.", tzname);
             Ok(None)
         } else {
