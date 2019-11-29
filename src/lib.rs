@@ -977,15 +977,8 @@ impl Parser {
                 *tzinfos.get(res.tzname.as_ref().unwrap()).unwrap(),
             )))
         } else if res.tzname.is_some() {
-            let tzname = res.tzname.as_ref().unwrap();
-            let tz: Result<Tz, String> = tzname.parse();
-            if tz.is_ok() {
-                let offset = tz.unwrap().offset_from_local_datetime(dt).unwrap().fix();
-                Ok(Some(offset))
-            } else {
-                println!("tzname {} identified but not understood ({}). Ignoring for the time being, but behavior is subject to change.", tzname, tz.unwrap_err());
-                Ok(None)
-            }
+            println!("tzname {} identified but not understood.", tzname);
+            Ok(None)
         } else {
             Err(ParseError::TimezoneUnsupported)
         }
