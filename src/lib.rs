@@ -956,7 +956,7 @@ impl Parser {
 
     fn build_tzaware(
         &self,
-        dt: &NaiveDateTime,
+        _dt: &NaiveDateTime,
         res: &ParsingResult,
         tzinfos: &HashMap<String, i32>,
     ) -> ParseResult<Option<FixedOffset>> {
