@@ -84,10 +84,7 @@ use chrono::Local;
 use chrono::NaiveDate;
 use chrono::NaiveDateTime;
 use chrono::NaiveTime;
-use chrono::Offset;
-use chrono::TimeZone;
 use chrono::Timelike;
-use chrono_tz::Tz;
 use num_traits::cast::ToPrimitive;
 use rust_decimal::Decimal;
 use rust_decimal::Error as DecimalError;
@@ -959,7 +956,7 @@ impl Parser {
 
     fn build_tzaware(
         &self,
-        dt: &NaiveDateTime,
+        _dt: &NaiveDateTime,
         res: &ParsingResult,
         tzinfos: &HashMap<String, i32>,
     ) -> ParseResult<Option<FixedOffset>> {
@@ -976,16 +973,9 @@ impl Parser {
             Ok(Some(FixedOffset::east(
                 *tzinfos.get(res.tzname.as_ref().unwrap()).unwrap(),
             )))
-        } else if res.tzname.is_some() {
-            let tzname = res.tzname.as_ref().unwrap();
-            let tz: Result<Tz, String> = tzname.parse();
-            if tz.is_ok() {
-                let offset = tz.unwrap().offset_from_local_datetime(dt).unwrap().fix();
-                Ok(Some(offset))
-            } else {
-                println!("tzname {} identified but not understood ({}). Ignoring for the time being, but behavior is subject to change.", tzname, tz.unwrap_err());
-                Ok(None)
-            }
+        } else if let Some(tzname) = res.tzname.as_ref() {
+            println!("tzname {} identified but not understood.", tzname);
+            Ok(None)
         } else {
             Err(ParseError::TimezoneUnsupported)
         }
