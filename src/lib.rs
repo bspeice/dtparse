@@ -1,4 +1,5 @@
 #![deny(missing_docs)]
+#![cfg_attr(test, allow(unknown_lints))]
 #![cfg_attr(test, deny(warnings))]
 
 //! # dtparse
@@ -165,16 +166,15 @@ pub(crate) fn tokenize(parse_string: &str) -> Vec<String> {
 
 /// Utility function for `ParserInfo` that helps in constructing
 /// the attributes that make up the `ParserInfo` container
-#[cfg_attr(feature = "cargo-clippy", allow(get_unwrap))] // Recommended suggestion of &vec[0] doesn't compile
 pub fn parse_info(vec: Vec<Vec<&str>>) -> HashMap<String, usize> {
     let mut m = HashMap::new();
 
     if vec.len() == 1 {
-        for (i, val) in vec.get(0).unwrap().into_iter().enumerate() {
+        for (i, val) in vec.get(0).unwrap().iter().enumerate() {
             m.insert(val.to_lowercase(), i);
         }
     } else {
-        for (i, val_vec) in vec.into_iter().enumerate() {
+        for (i, val_vec) in vec.iter().enumerate() {
             for val in val_vec {
                 m.insert(val.to_lowercase(), i);
             }
@@ -516,7 +516,7 @@ impl YMD {
         ))
     }
 
-    #[cfg_attr(feature = "cargo-clippy", allow(needless_return))]
+    #[allow(clippy::needless_return)]
     fn resolve_ymd(
         &mut self,
         yearfirst: bool,
@@ -670,7 +670,7 @@ impl Parser {
     /// timezone name support (i.e. "EST", "BRST") is not available by default
     /// at the moment, they must be added through `tzinfos` at the moment in
     /// order to be resolved.
-    #[cfg_attr(feature = "cargo-clippy", allow(too_many_arguments))] // Need to release a 2.0 for changing public API
+    #[allow(clippy::too_many_arguments)]
     pub fn parse(
         &self,
         timestr: &str,
@@ -699,7 +699,7 @@ impl Parser {
         }
     }
 
-    #[cfg_attr(feature = "cargo-clippy", allow(cyclomatic_complexity))] // Imitating Python API is priority
+    #[allow(clippy::cognitive_complexity)] // Imitating Python API is priority
     fn parse_with_tokens(
         &self,
         timestr: &str,
@@ -888,6 +888,7 @@ impl Parser {
             && all_ascii_upper
     }
 
+    #[allow(clippy::unnecessary_unwrap)]
     fn ampm_valid(&self, hour: Option<i32>, ampm: Option<bool>, fuzzy: bool) -> ParseResult<bool> {
         let mut val_is_ampm = !(fuzzy && ampm.is_some());
 
@@ -991,6 +992,7 @@ impl Parser {
         }
     }
 
+    #[allow(clippy::unnecessary_unwrap)]
     fn parse_numeric_token(
         &self,
         tokens: &[String],
@@ -1208,6 +1210,7 @@ impl Parser {
         hms_idx
     }
 
+    #[allow(clippy::unnecessary_unwrap)]
     fn parse_hms(
         &self,
         idx: usize,
@@ -1267,7 +1270,6 @@ impl Parser {
         (minute, second)
     }
 
-    #[cfg_attr(feature = "cargo-clippy", allow(needless_pass_by_value))] // Need Vec type because of mutability in the function that calls us
     fn recombine_skipped(&self, skipped_idxs: Vec<usize>, tokens: Vec<String>) -> Vec<String> {
         let mut skipped_tokens: Vec<String> = vec![];
 
