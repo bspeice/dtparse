@@ -1042,11 +1042,7 @@ impl Parser {
         } else if vec![8, 12, 14].contains(&len_li) {
             // YYMMDD
             let s = &tokens[idx];
-            ymd.append(
-                s[..4].parse::<i32>()?,
-                &s[..4],
-                Some(YMDLabel::Year),
-            )?;
+            ymd.append(s[..4].parse::<i32>()?, &s[..4], Some(YMDLabel::Year))?;
             ymd.append(s[4..6].parse::<i32>()?, &s[4..6], None)?;
             ymd.append(s[6..8].parse::<i32>()?, &s[6..8], None)?;
 
