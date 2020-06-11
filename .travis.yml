@@ -21,10 +21,10 @@ before_script:
   - rustup show
   # CMake doesn't like the `sh.exe` provided by Git being in PATH
   - if [[ "$TRAVIS_OS_NAME" == "windows" ]]; then rm "C:/Program Files/Git/usr/bin/sh.exe"; fi
-  - if [[ "$DISABLE_CLIPPY" == "" ]]; then rustup component add clippy; rustup component add rustfmt; fi
+  - if [[ "$DISABLE_TOOLS" == "" ]]; then rustup component add clippy; rustup component add rustfmt; fi
 
 script:
-  - if [[ "$DISABLE_CLIPPY" == "" ]]; then cargo clippy --all && cargo fmt --all -- --check; fi
+  - if [[ "$DISABLE_TOOLS" == "" ]]; then cargo clippy --all && cargo fmt --all -- --check; fi
 
   # For default build, split up compilation and tests so we can track build times
   - cargo test --no-run
