@@ -746,11 +746,11 @@ impl Parser {
                         // Jan-01[-99]
                         let sep = &l[i + 1];
                         // TODO: This seems like a very unsafe unwrap
-                        ymd.append(l[i + 2].parse::<i32>().unwrap(), &l[i + 2], None)?;
+                        ymd.append(l[i + 2].parse::<i32>()?, &l[i + 2], None)?;
 
                         if i + 3 < len_l && &l[i + 3] == sep {
                             // Jan-01-99
-                            ymd.append(l[i + 4].parse::<i32>().unwrap(), &l[i + 4], None)?;
+                            ymd.append(l[i + 4].parse::<i32>()?, &l[i + 4], None)?;
                             i += 2;
                         }
 
@@ -813,17 +813,17 @@ impl Parser {
                 // TODO: check that l[i + 1] is integer?
                 if len_li == 4 {
                     // -0300
-                    hour_offset = Some(l[i + 1][..2].parse::<i32>().unwrap());
-                    min_offset = Some(l[i + 1][2..4].parse::<i32>().unwrap());
+                    hour_offset = Some(l[i + 1][..2].parse::<i32>()?);
+                    min_offset = Some(l[i + 1][2..4].parse::<i32>()?);
                 } else if i + 2 < len_l && l[i + 2] == ":" {
                     // -03:00
-                    hour_offset = Some(l[i + 1].parse::<i32>().unwrap());
-                    min_offset = Some(l[i + 3].parse::<i32>().unwrap());
+                    hour_offset = Some(l[i + 1].parse::<i32>()?);
+                    min_offset = Some(l[i + 3].parse::<i32>()?);
                     i += 2;
                 } else if len_li <= 2 {
                     // -[0]3
                     let range_len = min(l[i + 1].len(), 2);
-                    hour_offset = Some(l[i + 1][..range_len].parse::<i32>().unwrap());
+                    hour_offset = Some(l[i + 1][..range_len].parse::<i32>()?);
                     min_offset = Some(0);
                 }
 
@@ -1027,9 +1027,9 @@ impl Parser {
             let s = &tokens[idx];
 
             if ymd.len() == 0 && tokens[idx].find('.') == None {
-                ymd.append(s[0..2].parse::<i32>().unwrap(), &s[0..2], None)?;
-                ymd.append(s[2..4].parse::<i32>().unwrap(), &s[2..4], None)?;
-                ymd.append(s[4..6].parse::<i32>().unwrap(), &s[4..6], None)?;
+                ymd.append(s[0..2].parse::<i32>()?, &s[0..2], None)?;
+                ymd.append(s[2..4].parse::<i32>()?, &s[2..4], None)?;
+                ymd.append(s[4..6].parse::<i32>()?, &s[4..6], None)?;
             } else {
                 // 19990101T235959[.59]
                 res.hour = s[0..2].parse::<i32>().ok();
@@ -1043,12 +1043,12 @@ impl Parser {
             // YYMMDD
             let s = &tokens[idx];
             ymd.append(
-                s[..4].parse::<i32>().unwrap(),
+                s[..4].parse::<i32>()?,
                 &s[..4],
                 Some(YMDLabel::Year),
             )?;
-            ymd.append(s[4..6].parse::<i32>().unwrap(), &s[4..6], None)?;
-            ymd.append(s[6..8].parse::<i32>().unwrap(), &s[6..8], None)?;
+            ymd.append(s[4..6].parse::<i32>()?, &s[4..6], None)?;
+            ymd.append(s[6..8].parse::<i32>()?, &s[6..8], None)?;
 
             if len_li > 8 {
                 res.hour = Some(s[8..10].parse::<i32>()?);
@@ -1090,7 +1090,7 @@ impl Parser {
         {
             // TODO: There's got to be a better way of handling the condition above
             let sep = &tokens[idx + 1];
-            ymd.append(value_repr.parse::<i32>().unwrap(), &value_repr, None)?;
+            ymd.append(value_repr.parse::<i32>()?, &value_repr, None)?;
 
             if idx + 2 < len_l && !info.jump_index(&tokens[idx + 2]) {
                 if let Ok(val) = tokens[idx + 2].parse::<i32>() {

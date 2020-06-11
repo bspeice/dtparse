@@ -40,3 +40,10 @@ fn test_fuzz() {
         Err(ParseError::ImpossibleTimestamp("Invalid minute"))
     );
 }
+
+#[test]
+fn large_int() {
+    let parse_result = parse("1412409095009.jpg");
+    assert!(parse_result.is_err());
+    println!("{:?}", parse_result);
+}
