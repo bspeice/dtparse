@@ -10,7 +10,6 @@ license = "Apache-2.0"
 
 [badges]
 travis-ci = { repository = "bspeice/dtparse" }
-appveyor = { repository = "bspeice/dtparse" }
 maintenance = { status = "passively-maintained" }
 
 [lib]

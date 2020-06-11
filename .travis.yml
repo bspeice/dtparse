@@ -1,109 +1,49 @@
-# Based on the "trust" template v0.1.2
-# https://github.com/japaric/trust/tree/v0.1.2
-
-dist: trusty
 language: rust
-services: docker
-sudo: required
-addons:
-  chrome: stable
 
-env:
-  global:
-    - CRATE_NAME=dtparse
-
-matrix:
+jobs:
   include:
-    # Android
-    - env: TARGET=aarch64-linux-android DISABLE_TESTS=1
-    - env: TARGET=arm-linux-androideabi DISABLE_TESTS=1
-    - env: TARGET=armv7-linux-androideabi DISABLE_TESTS=1
-    - env: TARGET=i686-linux-android DISABLE_TESTS=1
-    - env: TARGET=x86_64-linux-android DISABLE_TESTS=1
+  - rust: stable
+    os: linux
+  - rust: 1.28.0
+    os: linux
+  - rust: stable
+    os: osx
+  - rust: stable-msvc
+    os: windows
+  - rust: stable
+    os: windows
 
-    # iOS
-    - env: TARGET=aarch64-apple-ios DISABLE_TESTS=1
-      os: osx
-    - env: TARGET=armv7-apple-ios DISABLE_TESTS=1
-      os: osx
-    - env: TARGET=armv7s-apple-ios DISABLE_TESTS=1
-      os: osx
-    - env: TARGET=i386-apple-ios DISABLE_TESTS=1
-      os: osx
-    - env: TARGET=x86_64-apple-ios DISABLE_TESTS=1
-      os: osx
+cache:
+  - cargo
 
-    # Linux
-    - env: TARGET=aarch64-unknown-linux-gnu
-    - env: TARGET=arm-unknown-linux-gnueabi
-    - env: TARGET=armv7-unknown-linux-gnueabihf
-    - env: TARGET=i686-unknown-linux-gnu
-    - env: TARGET=i686-unknown-linux-musl
-    - env: TARGET=mips-unknown-linux-gnu
-    - env: TARGET=mips64-unknown-linux-gnuabi64
-    - env: TARGET=mips64el-unknown-linux-gnuabi64
-    - env: TARGET=mipsel-unknown-linux-gnu
-    - env: TARGET=powerpc-unknown-linux-gnu
-    - env: TARGET=powerpc64-unknown-linux-gnu
-    - env: TARGET=powerpc64le-unknown-linux-gnu
-    - env: TARGET=s390x-unknown-linux-gnu DISABLE_TESTS=1
-    - env: TARGET=x86_64-unknown-linux-gnu
-    - env: TARGET=x86_64-unknown-linux-musl
-
-    # OSX
-    - env: TARGET=i686-apple-darwin
-      os: osx
-    - env: TARGET=x86_64-apple-darwin
-      os: osx
-
-    # *BSD
-    - env: TARGET=i686-unknown-freebsd DISABLE_TESTS=1
-    - env: TARGET=x86_64-unknown-freebsd DISABLE_TESTS=1
-    - env: TARGET=x86_64-unknown-netbsd DISABLE_TESTS=1
-
-    # Windows
-    - env: TARGET=x86_64-pc-windows-gnu
-
-    # Nightly and Beta
-    - env: TARGET=x86_64-unknown-linux-gnu
-      rust: nightly
-    - env: TARGET=x86_64-apple-darwin
-      os: osx
-      rust: nightly
-    - env: TARGET=x86_64-unknown-linux-gnu
-      rust: beta
-    - env: TARGET=x86_64-apple-darwin
-      os: osx
-      rust: beta
-
-    # Historical Rust versions
-    - env: TARGET=x86_64-unknown-linux-gnu
-      rust: 1.28.0
-
-before_install:
-  - set -e
-  - rustup self update
-
-install:
-  - sh ci/install.sh
-  - source ~/.cargo/env || true
+before_script:
+  - rustup show
+  # CMake doesn't like the `sh.exe` provided by Git being in PATH
+  - if [[ "$TRAVIS_OS_NAME" == "windows" ]]; then rm "C:/Program Files/Git/usr/bin/sh.exe"; fi
+  - rustup component add clippy
+  - rustup component add rustfmt
 
 script:
-  - bash ci/script.sh
+  - cargo clippy --all
+  - cargo fmt --all -- --check
 
-after_script: set +e
+  # For default build, split up compilation and tests so we can track build times
+  - cargo test --no-run
+  - cargo test
+  - cargo test --release --no-run
+  - cargo test --release
 
-cache: cargo
-before_cache:
-  # Travis can't cache files that are not readable by "others"
-  - chmod -R a+r $HOME/.cargo
+  # Run tests using static linking
+  - cd "$TRAVIS_BUILD_DIR/libaeron-sys"
+  - cargo test --features "static"
+
+  - cd "$TRAVIS_BUILD_DIR/libaeron_driver-sys"
+  - cargo test --features "static"
+
 
 branches:
   only:
-    # release tags
-    - /^v\d+\.\d+\.\d+.*$/
     - master
-
-notifications:
-  email:
-    on_success: never
+    - staging
+    - trying
+    
