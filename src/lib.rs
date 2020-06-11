@@ -147,6 +147,8 @@ pub enum ParseError {
     /// Parser unable to make sense of year/month/day parameters in the time string;
     /// please report to maintainer as the timestring likely exposes a bug in implementation
     YearMonthDayError(&'static str),
+    /// Parser unable to find any date/time-related content in the supplied string
+    NoDate,
 }
 
 impl fmt::Display for ParseError {
@@ -624,6 +626,31 @@ struct ParsingResult {
     any_unused_tokens: Vec<String>,
 }
 
+macro_rules! option_len {
+    ($o:expr) => {{
+        if $o.is_some() {
+            1
+        } else {
+            0
+        }
+    }};
+}
+
+impl ParsingResult {
+    fn len(&self) -> usize {
+        option_len!(self.year)
+            + option_len!(self.month)
+            + option_len!(self.day)
+            + option_len!(self.weekday)
+            + option_len!(self.hour)
+            + option_len!(self.minute)
+            + option_len!(self.second)
+            + option_len!(self.microsecond)
+            + option_len!(self.tzname)
+            + option_len!(self.ampm)
+    }
+}
+
 /// Parser is responsible for doing the actual work of understanding a time string.
 /// The root level `parse` function is responsible for constructing a default `Parser`
 /// and triggering its behavior.
@@ -690,6 +717,10 @@ impl Parser {
 
         let (res, tokens) =
             self.parse_with_tokens(timestr, dayfirst, yearfirst, fuzzy, fuzzy_with_tokens)?;
+
+        if res.len() == 0 {
+            return Err(ParseError::NoDate);
+        }
 
         let naive = self.build_naive(&res, &default_ts)?;
 
