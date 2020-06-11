@@ -90,6 +90,8 @@ use rust_decimal::Decimal;
 use rust_decimal::Error as DecimalError;
 use std::cmp::min;
 use std::collections::HashMap;
+use std::error::Error;
+use std::fmt;
 use std::num::ParseIntError;
 use std::str::FromStr;
 use std::vec::Vec;
@@ -145,6 +147,14 @@ pub enum ParseError {
     /// please report to maintainer as the timestring likely exposes a bug in implementation
     YearMonthDayError(&'static str),
 }
+
+impl fmt::Display for ParseError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+impl Error for ParseError {}
 
 type ParseResult<I> = Result<I, ParseError>;
 
