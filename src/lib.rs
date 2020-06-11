@@ -347,7 +347,9 @@ impl ParserInfo {
             res.year = Some(self.convertyear(y, res.century_specified))
         };
 
-        if res.tzoffset == Some(0) && res.tzname.is_none() || res.tzname == Some("Z".to_owned()) {
+        if (res.tzoffset == Some(0) && res.tzname.is_none())
+            || (res.tzname == Some("Z".to_owned()) || res.tzname == Some("z".to_owned()))
+        {
             res.tzname = Some("UTC".to_owned());
             res.tzoffset = Some(0);
         } else if res.tzoffset != Some(0)
@@ -885,7 +887,7 @@ impl Parser {
             && tzname.is_none()
             && tzoffset.is_none()
             && token.len() <= 5
-            && all_ascii_upper
+            && (all_ascii_upper || self.info.utczone.contains_key(token))
     }
 
     #[allow(clippy::unnecessary_unwrap)]
