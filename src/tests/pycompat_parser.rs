@@ -3350,6 +3350,33 @@ fn test_parse_ignoretz6() {
 fn test_parse_ignoretz7() {
     let info = ParserInfo::default();
     let pdt = PyDateTime {
+        year: 1986,
+        month: 7,
+        day: 5,
+        hour: 8,
+        minute: 15,
+        second: 30,
+        micros: 0,
+        tzo: None,
+    };
+    parse_and_assert(
+        pdt,
+        info,
+        "1986-07-05T08:15:30z",
+        None,
+        None,
+        false,
+        false,
+        None,
+        true,
+        &HashMap::new(),
+    );
+}
+
+#[test]
+fn test_parse_ignoretz8() {
+    let info = ParserInfo::default();
+    let pdt = PyDateTime {
         year: 1995,
         month: 4,
         day: 4,
