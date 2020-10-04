@@ -45,6 +45,18 @@ fn large_int() {
 }
 
 #[test]
+fn another_large_int() {
+    let parse_result = parse("1412409095009");
+    assert!(parse_result.is_err());
+}
+
+#[test]
+fn an_even_larger_int() {
+    let parse_result = parse("1566997680962280");
+    assert!(parse_result.is_err());
+}
+
+#[test]
 fn empty_string() {
     assert_eq!(parse(""), Err(ParseError::NoDate))
 }

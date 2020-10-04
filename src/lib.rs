@@ -951,8 +951,7 @@ impl Parser {
         let m = res.month.unwrap_or_else(|| default.month() as i32) as u32;
 
         let d_offset = if res.weekday.is_some() && res.day.is_none() {
-            // TODO: Unwrap not justified
-            let dow = day_of_week(y as u32, m, default.day()).unwrap();
+            let dow = day_of_week(y as u32, m, default.day())?;
 
             // UNWRAP: We've already check res.weekday() is some
             let actual_weekday = (res.weekday.unwrap() + 1) % 7;
@@ -963,14 +962,15 @@ impl Parser {
         };
 
         // TODO: Change month/day to u32
-        let d = NaiveDate::from_ymd(
+        let d = NaiveDate::from_ymd_opt(
             y,
             m,
             min(
                 res.day.unwrap_or(default.day() as i32) as u32,
                 days_in_month(y, m as i32)?,
             ),
-        );
+        )
+        .ok_or_else(|| ParseError::ImpossibleTimestamp("Invalid date range given"))?;
 
         let d = d + d_offset;
 
