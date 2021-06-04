@@ -74,7 +74,6 @@
 extern crate lazy_static;
 
 extern crate chrono;
-extern crate chrono_tz;
 extern crate num_traits;
 extern crate rust_decimal;
 
