@@ -1091,9 +1091,8 @@ impl Parser {
         } else if let Some(hms_idx) = self.find_hms_index(idx, tokens, info, true) {
             // HH[ ]h or MM[ ]m or SS[.ss][ ]s
             let (new_idx, hms) = self.parse_hms(idx, tokens, info, Some(hms_idx));
-            if hms.is_some() {
-                // TODO: This unwrap is unjustified.
-                self.assign_hms(res, value_repr, hms.unwrap());
+            if let Some(hms) = hms {
+                self.assign_hms(res, value_repr, hms)?;
             }
             idx = new_idx;
         } else if idx + 2 < len_l && tokens[idx + 1] == ":" {
@@ -1101,7 +1100,7 @@ impl Parser {
             // TODO: Better story around Decimal handling
             res.hour = Some(value.floor().to_i64().unwrap() as i32);
             // TODO: Rescope `value` here?
-            value = self.to_decimal(&tokens[idx + 2]);
+            value = self.to_decimal(&tokens[idx + 2])?;
             let min_sec = self.parse_min_sec(value);
             res.minute = Some(min_sec.0);
             res.second = min_sec.1;
@@ -1152,7 +1151,9 @@ impl Parser {
                 res.hour = Some(self.adjust_ampm(hour, ampm));
                 idx += 1;
             } else {
-                ymd.append(value.floor().to_i64().unwrap() as i32, &value_repr, None)?;
+                //let value = value.floor().to_i32().ok_or(Err(ParseError::InvalidNumeric()))
+                let value = value.floor().to_i32().ok_or_else(|| ParseError::InvalidNumeric(value_repr.to_owned()))?;
+                ymd.append(value, &value_repr, None)?;
             }
 
             idx += 1;
@@ -1265,11 +1266,11 @@ impl Parser {
         }
     }
 
-    fn assign_hms(&self, res: &mut ParsingResult, value_repr: &str, hms: usize) {
-        let value = self.to_decimal(value_repr);
+    fn assign_hms(&self, res: &mut ParsingResult, value_repr: &str, hms: usize) -> ParseResult<()> {
+        let value = self.to_decimal(value_repr)?;
 
         if hms == 0 {
-            res.hour = Some(value.to_i64().unwrap() as i32);
+            res.hour = value.to_i32();
             if !close_to_integer(&value) {
                 res.minute = Some((*SIXTY * (value % *ONE)).to_i64().unwrap() as i32);
             }
@@ -1282,11 +1283,12 @@ impl Parser {
             res.second = Some(sec);
             res.microsecond = Some(micro);
         }
+
+        Ok(())
     }
 
-    fn to_decimal(&self, value: &str) -> Decimal {
-        // TODO: Justify unwrap
-        Decimal::from_str(value).unwrap()
+    fn to_decimal(&self, value: &str) -> ParseResult<Decimal> {
+        Decimal::from_str(value).or_else(|_| Err(ParseError::InvalidNumeric(value.to_owned())))
     }
 
     fn parse_min_sec(&self, value: Decimal) -> (i32, Option<i32>) {
