@@ -19,4 +19,4 @@ name = "dtparse"
 chrono = "0.4"
 lazy_static = "1.1"
 num-traits = "0.2"
-rust_decimal = "^0.10.1"
+rust_decimal = { version = "1.17.0", default-features = false }
