@@ -1,5 +1,6 @@
 use chrono::NaiveDate;
 use std::collections::HashMap;
+use std::str;
 
 use parse;
 use ParseError;
@@ -69,4 +70,12 @@ fn github_33() {
 #[test]
 fn github_32() {
     assert_eq!(parse("99999999999999999999999"), Err(ParseError::InvalidNumeric("99999999999999999999999".to_owned())))
+}
+
+#[test]
+fn github_34() {
+    let parse_vec = base64::decode("KTMuLjYpGDYvLjZTNiouNjYuHzZpLjY/NkwuNh42Ry42PzYnKTMuNk02NjY2NjA2NjY2NjY2NjYTNjY2Ni82NjY2NlAuNlAuNlNI").unwrap();
+    let parse_str = str::from_utf8(&parse_vec).unwrap();
+    let parse_result = parse(parse_str);
+    assert!(parse_result.is_err());
 }
