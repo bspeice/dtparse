@@ -87,3 +87,11 @@ fn github_35() {
     let parse_result = parse(parse_str);
     assert!(parse_result.is_err());
 }
+
+#[test]
+fn github_36() {
+    let parse_vec = base64::decode("KTYuLg==").unwrap();
+    let parse_str = str::from_utf8(&parse_vec).unwrap();
+    let parse_result = parse(parse_str);
+    assert!(parse_result.is_err());
+}
