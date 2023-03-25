@@ -43,6 +43,6 @@ fn main() {
         )
         .unwrap()
         .0,
-        NaiveDate::from_ymd(2015, 9, 10).and_hms(10, 20, 0)
+        NaiveDate::from_ymd_opt(2015, 9, 10).unwrap().and_hms_opt(10, 20, 0).unwrap()
     );
 }

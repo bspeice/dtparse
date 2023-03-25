@@ -1,3 +1,5 @@
+use base64::Engine;
+use base64::engine::general_purpose::STANDARD;
 use chrono::NaiveDate;
 use std::collections::HashMap;
 use std::str;
@@ -19,7 +21,7 @@ fn test_fuzz() {
         Err(ParseError::UnrecognizedFormat)
     );
 
-    let default = NaiveDate::from_ymd(2016, 6, 29).and_hms(0, 0, 0);
+    let default = NaiveDate::from_ymd_opt(2016, 6, 29).unwrap().and_hms_opt(0, 0, 0).unwrap();
     let p = Parser::default();
     let res = p.parse(
         "\x0D\x31",
@@ -74,7 +76,7 @@ fn github_32() {
 
 #[test]
 fn github_34() {
-    let parse_vec = base64::decode("KTMuLjYpGDYvLjZTNiouNjYuHzZpLjY/NkwuNh42Ry42PzYnKTMuNk02NjY2NjA2NjY2NjY2NjYTNjY2Ni82NjY2NlAuNlAuNlNI").unwrap();
+    let parse_vec = STANDARD.decode("KTMuLjYpGDYvLjZTNiouNjYuHzZpLjY/NkwuNh42Ry42PzYnKTMuNk02NjY2NjA2NjY2NjY2NjYTNjY2Ni82NjY2NlAuNlAuNlNI").unwrap();
     let parse_str = str::from_utf8(&parse_vec).unwrap();
     let parse_result = parse(parse_str);
     assert!(parse_result.is_err());
@@ -82,7 +84,7 @@ fn github_34() {
 
 #[test]
 fn github_35() {
-    let parse_vec = base64::decode("KTY6LjYqNio6KjYn").unwrap();
+    let parse_vec = STANDARD.decode("KTY6LjYqNio6KjYn").unwrap();
     let parse_str = str::from_utf8(&parse_vec).unwrap();
     let parse_result = parse(parse_str);
     assert!(parse_result.is_err());
@@ -90,7 +92,7 @@ fn github_35() {
 
 #[test]
 fn github_36() {
-    let parse_vec = base64::decode("KTYuLg==").unwrap();
+    let parse_vec = STANDARD.decode("KTYuLg==").unwrap();
     let parse_str = str::from_utf8(&parse_vec).unwrap();
     let parse_result = parse(parse_str);
     assert!(parse_result.is_err());

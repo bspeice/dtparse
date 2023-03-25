@@ -77,6 +77,9 @@ extern crate chrono;
 extern crate num_traits;
 extern crate rust_decimal;
 
+#[cfg(test)]
+extern crate base64;
+
 use chrono::Datelike;
 use chrono::Duration;
 use chrono::FixedOffset;
@@ -712,7 +715,7 @@ impl Parser {
     ) -> ParseResult<(NaiveDateTime, Option<FixedOffset>, Option<Vec<String>>)> {
         let default_date = default.unwrap_or(&Local::now().naive_local()).date();
 
-        let default_ts = NaiveDateTime::new(default_date, NaiveTime::from_hms(0, 0, 0));
+        let default_ts = NaiveDateTime::new(default_date, NaiveTime::from_hms_opt(0, 0, 0).unwrap());
 
         let (res, tokens) =
             self.parse_with_tokens(timestr, dayfirst, yearfirst, fuzzy, fuzzy_with_tokens)?;
@@ -1004,7 +1007,7 @@ impl Parser {
         tzinfos: &HashMap<String, i32>,
     ) -> ParseResult<Option<FixedOffset>> {
         if let Some(offset) = res.tzoffset {
-            Ok(Some(FixedOffset::east(offset)))
+            Ok(FixedOffset::east_opt(offset))
         } else if res.tzoffset == None
             && (res.tzname == Some(" ".to_owned())
                 || res.tzname == Some(".".to_owned())
@@ -1013,9 +1016,9 @@ impl Parser {
         {
             Ok(None)
         } else if res.tzname.is_some() && tzinfos.contains_key(res.tzname.as_ref().unwrap()) {
-            Ok(Some(FixedOffset::east(
+            Ok(FixedOffset::east_opt(
                 *tzinfos.get(res.tzname.as_ref().unwrap()).unwrap(),
-            )))
+            ))
         } else if let Some(tzname) = res.tzname.as_ref() {
             println!("tzname {} identified but not understood.", tzname);
             Ok(None)
