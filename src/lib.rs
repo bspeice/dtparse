@@ -77,6 +77,9 @@ extern crate chrono;
 extern crate num_traits;
 extern crate rust_decimal;
 
+#[cfg(test)]
+extern crate base64;
+
 use chrono::Datelike;
 use chrono::Duration;
 use chrono::FixedOffset;
@@ -617,7 +620,7 @@ struct ParsingResult {
     hour: Option<i32>,
     minute: Option<i32>,
     second: Option<i32>,
-    microsecond: Option<i32>,
+    nanosecond: Option<i64>,
     tzname: Option<String>,
     tzoffset: Option<i32>,
     ampm: Option<bool>,
@@ -644,7 +647,7 @@ impl ParsingResult {
             + option_len!(self.hour)
             + option_len!(self.minute)
             + option_len!(self.second)
-            + option_len!(self.microsecond)
+            + option_len!(self.nanosecond)
             + option_len!(self.tzname)
             + option_len!(self.ampm)
     }
@@ -712,7 +715,7 @@ impl Parser {
     ) -> ParseResult<(NaiveDateTime, Option<FixedOffset>, Option<Vec<String>>)> {
         let default_date = default.unwrap_or(&Local::now().naive_local()).date();
 
-        let default_ts = NaiveDateTime::new(default_date, NaiveTime::from_hms(0, 0, 0));
+        let default_ts = NaiveDateTime::new(default_date, NaiveTime::from_hms_opt(0, 0, 0).unwrap());
 
         let (res, tokens) =
             self.parse_with_tokens(timestr, dayfirst, yearfirst, fuzzy, fuzzy_with_tokens)?;
@@ -976,18 +979,18 @@ impl Parser {
         let hour = res.hour.unwrap_or(default.hour() as i32) as u32;
         let minute = res.minute.unwrap_or(default.minute() as i32) as u32;
         let second = res.second.unwrap_or(default.second() as i32) as u32;
-        let microsecond = res
-            .microsecond
-            .unwrap_or(default.timestamp_subsec_micros() as i32) as u32;
+        let nanosecond = res
+            .nanosecond
+            .unwrap_or(default.timestamp_subsec_nanos() as i64) as u32;
         let t =
-            NaiveTime::from_hms_micro_opt(hour, minute, second, microsecond).ok_or_else(|| {
+            NaiveTime::from_hms_nano_opt(hour, minute, second, nanosecond).ok_or_else(|| {
                 if hour >= 24 {
                     ParseError::ImpossibleTimestamp("Invalid hour")
                 } else if minute >= 60 {
                     ParseError::ImpossibleTimestamp("Invalid minute")
                 } else if second >= 60 {
                     ParseError::ImpossibleTimestamp("Invalid second")
-                } else if microsecond >= 2_000_000 {
+                } else if nanosecond >= 2_000_000_000 {
                     ParseError::ImpossibleTimestamp("Invalid microsecond")
                 } else {
                     unreachable!();
@@ -1004,7 +1007,7 @@ impl Parser {
         tzinfos: &HashMap<String, i32>,
     ) -> ParseResult<Option<FixedOffset>> {
         if let Some(offset) = res.tzoffset {
-            Ok(Some(FixedOffset::east(offset)))
+            Ok(FixedOffset::east_opt(offset))
         } else if res.tzoffset == None
             && (res.tzname == Some(" ".to_owned())
                 || res.tzname == Some(".".to_owned())
@@ -1013,9 +1016,9 @@ impl Parser {
         {
             Ok(None)
         } else if res.tzname.is_some() && tzinfos.contains_key(res.tzname.as_ref().unwrap()) {
-            Ok(Some(FixedOffset::east(
+            Ok(FixedOffset::east_opt(
                 *tzinfos.get(res.tzname.as_ref().unwrap()).unwrap(),
-            )))
+            ))
         } else if let Some(tzname) = res.tzname.as_ref() {
             println!("tzname {} identified but not understood.", tzname);
             Ok(None)
@@ -1071,7 +1074,7 @@ impl Parser {
 
                 let t = self.parsems(&s[4..])?;
                 res.second = Some(t.0);
-                res.microsecond = Some(t.1);
+                res.nanosecond = Some(t.1);
             }
         } else if vec![8, 12, 14].contains(&len_li) {
             // YYMMDD
@@ -1109,7 +1112,7 @@ impl Parser {
                 // TODO: (x, y) = (a, b) syntax?
                 let ms = self.parsems(&tokens[idx + 4]).unwrap();
                 res.second = Some(ms.0);
-                res.microsecond = Some(ms.1);
+                res.nanosecond = Some(ms.1);
 
                 idx += 2;
             }
@@ -1183,13 +1186,13 @@ impl Parser {
         }
     }
 
-    fn parsems(&self, seconds_str: &str) -> ParseResult<(i32, i32)> {
+    fn parsems(&self, seconds_str: &str) -> ParseResult<(i32, i64)> {
         if seconds_str.contains('.') {
             let split: Vec<&str> = seconds_str.split('.').collect();
             let (i, f): (&str, &str) = (split[0], split[1]);
 
             let i_parse = i.parse::<i32>()?;
-            let f_parse = ljust(f, 6, '0').parse::<i32>()?;
+            let f_parse = ljust(f, 9, '0').parse::<i64>()?;
             Ok((i_parse, f_parse))
         } else {
             Ok((seconds_str.parse::<i32>()?, 0))
@@ -1281,7 +1284,7 @@ impl Parser {
         } else if hms == 2 {
             let (sec, micro) = self.parsems(value_repr).unwrap();
             res.second = Some(sec);
-            res.microsecond = Some(micro);
+            res.nanosecond = Some(micro);
         }
 
         Ok(())

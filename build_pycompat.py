@@ -317,7 +317,7 @@ TEST_PARSE_DEFAULT = '''
 #[test]
 fn test_parse_default{i}() {{
     let info = ParserInfo::default();
-    let default_rsdate = &NaiveDate::from_ymd(2003, 9, 25).and_hms(0, 0, 0);
+    let default_rsdate = &NaiveDate::from_ymd_opt(2003, 9, 25).unwrap().and_hms_opt(0, 0, 0).unwrap();
     let pdt = PyDateTime {{
         year: {d.year}, month: {d.month}, day: {d.day},
         hour: {d.hour}, minute: {d.minute}, second: {d.second},
@@ -407,7 +407,7 @@ TEST_UNSPECIFIED_FALLBACK = '''
 #[test]
 fn test_unspecified_fallback{i}() {{
     let info = ParserInfo::default();
-    let default_rsdate = &NaiveDate::from_ymd(2010, 1, 31).and_hms(0, 0, 0);
+    let default_rsdate = &NaiveDate::from_ymd_opt(2010, 1, 31).unwrap().and_hms_opt(0, 0, 0).unwrap();
     let pdt = PyDateTime {{
         year: {d.year}, month: {d.month}, day: {d.day},
         hour: {d.hour}, minute: {d.minute}, second: {d.second},
@@ -435,7 +435,7 @@ TEST_PARSE_DEFAULT_IGNORE = '''
 #[ignore]
 fn test_parse_default_ignore{i}() {{
     let info = ParserInfo::default();
-    let default_rsdate = &NaiveDate::from_ymd(2003, 9, 25).and_hms(0, 0, 0);
+    let default_rsdate = &NaiveDate::from_ymd_opt(2003, 9, 25).unwrap().and_hms_opt(0, 0, 0).unwrap();
     let pdt = PyDateTime {{
         year: {d.year}, month: {d.month}, day: {d.day},
         hour: {d.hour}, minute: {d.minute}, second: {d.second},
