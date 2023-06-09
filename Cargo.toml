@@ -1,6 +1,6 @@
 [package]
 name = "dtparse"
-version = "1.4.0"
+version = "1.5.0"
 authors = ["Bradlee Speice <bradlee@speice.io>"]
 description = "A dateutil-compatible timestamp parser for Rust"
 repository = "https://github.com/bspeice/dtparse.git"
