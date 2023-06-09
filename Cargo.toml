@@ -7,6 +7,7 @@ repository = "https://github.com/bspeice/dtparse.git"
 readme = "README.md"
 categories = ["date-and-time"]
 license = "Apache-2.0"
+exclude = ["/*.py"]
 
 [badges]
 travis-ci = { repository = "bspeice/dtparse" }
