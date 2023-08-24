@@ -17,7 +17,7 @@ maintenance = { status = "passively-maintained" }
 name = "dtparse"
 
 [dependencies]
-chrono = "0.4.24"
+chrono = { version = "0.4.24", default-features = false, features = ["clock"] }
 lazy_static = "1.4.0"
 num-traits = "0.2.15"
 rust_decimal = { version = "1.29.1", default-features = false }
