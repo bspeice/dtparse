@@ -25,6 +25,7 @@ struct PyDateTime {
     tzo: Option<i32>,
 }
 
+#[allow(clippy::too_many_arguments)]
 fn parse_and_assert(
     pdt: PyDateTime,
     info: ParserInfo,
@@ -49,7 +50,7 @@ fn parse_and_assert(
             ignoretz,
             tzinfos,
         )
-        .expect(&format!("Unable to parse date in Rust '{}'", s));
+        .unwrap_or_else(|_| panic!("Unable to parse date in Rust '{}'", s));
 
     assert_eq!(pdt.year, rs_parsed.0.year(), "Year mismatch for '{}'", s);
     assert_eq!(pdt.month, rs_parsed.0.month(), "Month mismatch for '{}'", s);
@@ -82,7 +83,7 @@ fn parse_and_assert(
 }
 
 fn parse_and_assert_simple(pdt: PyDateTime, s: &str) {
-    let rs_parsed = parse(s).expect(&format!("Unable to parse date in Rust '{}'", s));
+    let rs_parsed = parse(s).unwrap_or_else(|_| panic!("Unable to parse date in Rust '{}'", s));
     assert_eq!(pdt.year, rs_parsed.0.year(), "Year mismatch for '{}'", s);
     assert_eq!(pdt.month, rs_parsed.0.month(), "Month mismatch for '{}'", s);
     assert_eq!(pdt.day, rs_parsed.0.day(), "Day mismatch for '{}'", s);
@@ -113,6 +114,7 @@ fn parse_and_assert_simple(pdt: PyDateTime, s: &str) {
     );
 }
 
+#[allow(clippy::too_many_arguments)]
 fn parse_fuzzy_and_assert(
     pdt: PyDateTime,
     ptokens: Option<Vec<String>>,
@@ -138,7 +140,7 @@ fn parse_fuzzy_and_assert(
             ignoretz,
             tzinfos,
         )
-        .expect(&format!("Unable to parse date in Rust '{}'", s));
+        .unwrap_or_else(|_| panic!("Unable to parse date in Rust '{}'", s));
 
     assert_eq!(pdt.year, rs_parsed.0.year(), "Year mismatch for '{}'", s);
     assert_eq!(pdt.month, rs_parsed.0.month(), "Month mismatch for '{}'", s);
