@@ -111,6 +111,18 @@ fn github_36() {
 
 #[test]
 fn github_46() {
-    let parse_result = parse("2000-01-01 12:00:00+00:");
-    assert!(parse_result.is_err());
+    assert_eq!(
+        parse("2000-01-01 12:00:00+00:"),
+        Err(ParseError::TimezoneUnsupported)
+    );
+    let parse_result = parse("2000-01-01 12:00:00+0811");
+    match parse_result {
+        Ok((dt, offset)) => {
+            assert_eq!(format!("{:?}", dt), "2000-01-01T12:00:00".to_string());
+            assert_eq!(format!("{:?}", offset), "Some(+08:11)".to_string());
+        }
+        Err(_) => {
+            panic!();
+        }
+    }
 }
