@@ -715,7 +715,8 @@ impl Parser {
     ) -> ParseResult<(NaiveDateTime, Option<FixedOffset>, Option<Vec<String>>)> {
         let default_date = default.unwrap_or(&Local::now().naive_local()).date();
 
-        let default_ts = NaiveDateTime::new(default_date, NaiveTime::from_hms_opt(0, 0, 0).unwrap());
+        let default_ts =
+            NaiveDateTime::new(default_date, NaiveTime::from_hms_opt(0, 0, 0).unwrap());
 
         let (res, tokens) =
             self.parse_with_tokens(timestr, dayfirst, yearfirst, fuzzy, fuzzy_with_tokens)?;
@@ -853,7 +854,12 @@ impl Parser {
                 } else if i + 2 < len_l && l[i + 2] == ":" {
                     // -03:00
                     hour_offset = Some(l[i + 1].parse::<i32>()?);
-                    min_offset = Some(l[i + 3].parse::<i32>()?);
+                    // if timezone is wrong format like "-03:" just return a Err, should not panic.
+                    min_offset = if i + 3 > l.len() - 1 {
+                        return Err(ParseError::TimezoneUnsupported);
+                    } else {
+                        Some(l[i + 3].parse::<i32>()?)
+                    };
                     i += 2;
                 } else if len_li <= 2 {
                     // -[0]3
@@ -979,9 +985,9 @@ impl Parser {
         let hour = res.hour.unwrap_or(default.hour() as i32) as u32;
         let minute = res.minute.unwrap_or(default.minute() as i32) as u32;
         let second = res.second.unwrap_or(default.second() as i32) as u32;
-        let nanosecond = res
-            .nanosecond
-            .unwrap_or(default.timestamp_subsec_nanos() as i64) as u32;
+        let nanosecond =
+            res.nanosecond
+                .unwrap_or(default.and_utc().timestamp_subsec_nanos() as i64) as u32;
         let t =
             NaiveTime::from_hms_nano_opt(hour, minute, second, nanosecond).ok_or_else(|| {
                 if hour >= 24 {
@@ -1155,7 +1161,10 @@ impl Parser {
                 idx += 1;
             } else {
                 //let value = value.floor().to_i32().ok_or(Err(ParseError::InvalidNumeric()))
-                let value = value.floor().to_i32().ok_or_else(|| ParseError::InvalidNumeric(value_repr.to_owned()))?;
+                let value = value
+                    .floor()
+                    .to_i32()
+                    .ok_or_else(|| ParseError::InvalidNumeric(value_repr.to_owned()))?;
                 ymd.append(value, &value_repr, None)?;
             }
 

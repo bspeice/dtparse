@@ -1,5 +1,5 @@
-use base64::Engine;
 use base64::engine::general_purpose::STANDARD;
+use base64::Engine;
 use chrono::NaiveDate;
 use std::collections::HashMap;
 use std::str;
@@ -21,7 +21,10 @@ fn test_fuzz() {
         Err(ParseError::UnrecognizedFormat)
     );
 
-    let default = NaiveDate::from_ymd_opt(2016, 6, 29).unwrap().and_hms_opt(0, 0, 0).unwrap();
+    let default = NaiveDate::from_ymd_opt(2016, 6, 29)
+        .unwrap()
+        .and_hms_opt(0, 0, 0)
+        .unwrap();
     let p = Parser::default();
     let res = p.parse(
         "\x0D\x31",
@@ -66,12 +69,20 @@ fn empty_string() {
 
 #[test]
 fn github_33() {
-    assert_eq!(parse("66:'"), Err(ParseError::InvalidNumeric("'".to_owned())))
+    assert_eq!(
+        parse("66:'"),
+        Err(ParseError::InvalidNumeric("'".to_owned()))
+    )
 }
 
 #[test]
 fn github_32() {
-    assert_eq!(parse("99999999999999999999999"), Err(ParseError::InvalidNumeric("99999999999999999999999".to_owned())))
+    assert_eq!(
+        parse("99999999999999999999999"),
+        Err(ParseError::InvalidNumeric(
+            "99999999999999999999999".to_owned()
+        ))
+    )
 }
 
 #[test]
@@ -95,5 +106,11 @@ fn github_36() {
     let parse_vec = STANDARD.decode("KTYuLg==").unwrap();
     let parse_str = str::from_utf8(&parse_vec).unwrap();
     let parse_result = parse(parse_str);
+    assert!(parse_result.is_err());
+}
+
+#[test]
+fn github_46() {
+    let parse_result = parse("2000-01-01 12:00:00+00:");
     assert!(parse_result.is_err());
 }
