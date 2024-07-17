@@ -710,8 +710,10 @@ impl Parser {
         ignoretz: bool,
         tzinfos: &HashMap<String, i32>,
     ) -> ParseResult<(NaiveDateTime, Option<FixedOffset>, Option<Vec<String>>)> {
-        let default_date = default.unwrap_or(&Local::now().naive_local()).date();
-
+        // If default is none, 1970-01-01 00:00:00 as default value is better.
+        let default_date = default
+            .unwrap_or(&NaiveDate::default().and_hms_opt(0, 0, 0).unwrap())
+            .date();
         let default_ts =
             NaiveDateTime::new(default_date, NaiveTime::from_hms_opt(0, 0, 0).unwrap());
 

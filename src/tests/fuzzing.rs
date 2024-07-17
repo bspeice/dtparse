@@ -160,4 +160,15 @@ fn github_46() {
             panic!();
         }
     }
+
+    parse_result = parse("2000");
+    match parse_result {
+        Ok((dt, offset)) => {
+            assert_eq!(format!("{:?}", dt), "2000-01-01T00:00:00".to_string());
+            assert!(offset.is_none());
+        }
+        Err(_) => {
+            panic!();
+        }
+    }
 }
