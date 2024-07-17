@@ -851,19 +851,40 @@ impl Parser {
                     min_offset = Some(l[i + 1][2..4].parse::<i32>()?);
                 } else if i + 2 < len_l && l[i + 2] == ":" {
                     // -03:00
-                    hour_offset = Some(l[i + 1].parse::<i32>()?);
-                    // if timezone is wrong format like "-03:" just return a Err, should not panic.
-                    min_offset = if i + 3 > l.len() - 1 {
-                        return Err(ParseError::TimezoneUnsupported);
+                    let hour_offset_len = l[i + 1].len();
+                    // -003:00 need err
+                    if hour_offset_len <= 2 {
+                        let range_len = min(hour_offset_len, 2);
+                        hour_offset = Some(l[i + 1][..range_len].parse::<i32>()?);
                     } else {
-                        Some(l[i + 3].parse::<i32>()?)
-                    };
+                        return Err(ParseError::TimezoneUnsupported);
+                    }
+
+                    // if timezone is wrong format like "-03:" just return a Err, should not panic.
+                    if i + 3 > l.len() - 1 {
+                        return Err(ParseError::TimezoneUnsupported);
+                    }
+
+                    let min_offset_len = l[i + 3].len();
+                    // -09:003 need err
+                    if min_offset_len <= 2 {
+                        let range_len = min(min_offset_len, 2);
+                        min_offset = Some(l[i + 3][..range_len].parse::<i32>()?);
+                    } else {
+                        return Err(ParseError::TimezoneUnsupported);
+                    }
+
                     i += 2;
                 } else if timezone_len <= 2 {
                     // -[0]3
                     let range_len = min(l[i + 1].len(), 2);
                     hour_offset = Some(l[i + 1][..range_len].parse::<i32>()?);
                     min_offset = Some(0);
+                }
+
+                // like +09123
+                if hour_offset.is_none() && min_offset.is_none() {
+                    return Err(ParseError::TimezoneUnsupported);
                 }
 
                 res.tzoffset =
