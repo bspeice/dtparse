@@ -97,3 +97,10 @@ fn github_36() {
     let parse_result = parse(parse_str);
     assert!(parse_result.is_err());
 }
+
+#[test]
+fn github_45() {
+    assert!(parse("/2018-fifa-").is_err());
+    assert!(parse("/2009/07/").is_err());
+    assert!(parse("2021-09-").is_err());
+}
