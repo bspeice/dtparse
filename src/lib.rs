@@ -713,9 +713,12 @@ impl Parser {
         ignoretz: bool,
         tzinfos: &HashMap<String, i32>,
     ) -> ParseResult<(NaiveDateTime, Option<FixedOffset>, Option<Vec<String>>)> {
-        let default_date = default.unwrap_or(&Local::now().naive_local()).date();
-
-        let default_ts = NaiveDateTime::new(default_date, NaiveTime::from_hms_opt(0, 0, 0).unwrap());
+        // If default is none, 1970-01-01 00:00:00 as default value is better.
+        let default_date = default
+            .unwrap_or(&NaiveDate::default().and_hms_opt(0, 0, 0).unwrap())
+            .date();
+        let default_ts =
+            NaiveDateTime::new(default_date, NaiveTime::from_hms_opt(0, 0, 0).unwrap());
 
         let (res, tokens) =
             self.parse_with_tokens(timestr, dayfirst, yearfirst, fuzzy, fuzzy_with_tokens)?;
@@ -840,26 +843,52 @@ impl Parser {
                 }
             } else if res.hour.is_some() && (l[i] == "+" || l[i] == "-") {
                 let signal = if l[i] == "+" { 1 } else { -1 };
-                let len_li = l[i].len();
+                // check next index's length
+                let timezone_len = l[i + 1].len();
 
                 let mut hour_offset: Option<i32> = None;
                 let mut min_offset: Option<i32> = None;
 
                 // TODO: check that l[i + 1] is integer?
-                if len_li == 4 {
+                if timezone_len == 4 {
                     // -0300
                     hour_offset = Some(l[i + 1][..2].parse::<i32>()?);
                     min_offset = Some(l[i + 1][2..4].parse::<i32>()?);
                 } else if i + 2 < len_l && l[i + 2] == ":" {
                     // -03:00
-                    hour_offset = Some(l[i + 1].parse::<i32>()?);
-                    min_offset = Some(l[i + 3].parse::<i32>()?);
+                    let hour_offset_len = l[i + 1].len();
+                    // -003:00 need err
+                    if hour_offset_len <= 2 {
+                        let range_len = min(hour_offset_len, 2);
+                        hour_offset = Some(l[i + 1][..range_len].parse::<i32>()?);
+                    } else {
+                        return Err(ParseError::TimezoneUnsupported);
+                    }
+
+                    // if timezone is wrong format like "-03:" just return a Err, should not panic.
+                    if i + 3 > l.len() - 1 {
+                        return Err(ParseError::TimezoneUnsupported);
+                    }
+
+                    let min_offset_len = l[i + 3].len();
+                    // -09:003 need err
+                    if min_offset_len <= 2 {
+                        let range_len = min(min_offset_len, 2);
+                        min_offset = Some(l[i + 3][..range_len].parse::<i32>()?);
+                    } else {
+                        return Err(ParseError::TimezoneUnsupported);
+                    }
                     i += 2;
-                } else if len_li <= 2 {
+                } else if timezone_len <= 2 {
                     // -[0]3
                     let range_len = min(l[i + 1].len(), 2);
                     hour_offset = Some(l[i + 1][..range_len].parse::<i32>()?);
                     min_offset = Some(0);
+                }
+
+                // like +09123
+                if hour_offset.is_none() && min_offset.is_none() {
+                    return Err(ParseError::TimezoneUnsupported);
                 }
 
                 res.tzoffset =
