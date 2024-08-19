@@ -104,3 +104,67 @@ fn github_45() {
     assert!(parse("/2009/07/").is_err());
     assert!(parse("2021-09-").is_err());
 }
+
+#[test]
+fn github_46() {
+    assert_eq!(
+        parse("2000-01-01 12:00:00+00:"),
+        Err(ParseError::TimezoneUnsupported)
+    );
+    assert_eq!(
+        parse("2000-01-01 12:00:00+09123"),
+        Err(ParseError::TimezoneUnsupported)
+    );
+    assert_eq!(
+        parse("2000-01-01 13:00:00+00:003"),
+        Err(ParseError::TimezoneUnsupported)
+    );
+    assert_eq!(
+        parse("2000-01-01 13:00:00+009:03"),
+        Err(ParseError::TimezoneUnsupported)
+    );
+    assert_eq!(
+        parse("2000-01-01 13:00:00+xx:03"),
+        Err(ParseError::InvalidNumeric(
+            "invalid digit found in string".to_owned()
+        ))
+    );
+    assert_eq!(
+        parse("2000-01-01 13:00:00+00:yz"),
+        Err(ParseError::InvalidNumeric(
+            "invalid digit found in string".to_owned()
+        ))
+    );
+    let mut parse_result = parse("2000-01-01 13:00:00+00:03");
+    match parse_result {
+        Ok((dt, offset)) => {
+            assert_eq!(format!("{:?}", dt), "2000-01-01T13:00:00".to_string());
+            assert_eq!(format!("{:?}", offset), "Some(+00:03)".to_string());
+        }
+        Err(_) => {
+            panic!();
+        }
+    };
+
+    parse_result = parse("2000-01-01 12:00:00+0811");
+    match parse_result {
+        Ok((dt, offset)) => {
+            assert_eq!(format!("{:?}", dt), "2000-01-01T12:00:00".to_string());
+            assert_eq!(format!("{:?}", offset), "Some(+08:11)".to_string());
+        }
+        Err(_) => {
+            panic!();
+        }
+    }
+
+    parse_result = parse("2000");
+    match parse_result {
+        Ok((dt, offset)) => {
+            assert_eq!(format!("{:?}", dt), "2000-01-01T00:00:00".to_string());
+            assert!(offset.is_none());
+        }
+        Err(_) => {
+            panic!();
+        }
+    }
+}
