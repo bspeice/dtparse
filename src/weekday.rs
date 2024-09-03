@@ -55,7 +55,7 @@ impl DayOfWeek {
 pub fn day_of_week(year: u32, month: u32, day: u32) -> ParseResult<DayOfWeek> {
     // From https://en.wikipedia.org/wiki/Determination_of_the_day_of_the_week#Schwerdtfeger's_method
     let (c, g) = match month {
-        3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 => {
+        3..=12 => {
             let c = year / 100;
             (c, year - 100 * c)
         }
